@@ -33,10 +33,11 @@ jobs:
       - name: Načíst obsah z Googlu (tabulka + Disk)
         env:
           GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY || secrets.DEEPL }}
         run: python generator/fetch.py
       - name: Sestavit web
         env:
-          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY || secrets.DEEPL }}
         run: python generator/build.py
       - uses: actions/upload-pages-artifact@v4
         with: { path: site }
