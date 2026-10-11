@@ -231,6 +231,24 @@ def hero_caption(p):
     return "" if re.fullmatch(r"[\d\s·.]*", cap) else cap
 
 
+FOTO_WORD = {"cs": "Foto", "en": "Photo", "de": "Foto"}
+
+
+def tr_caption(cap, lang):
+    """Popisek fotky: „Foto Jméno Příjmení“ se nepřekládá (jen slovo Foto),
+    ostatní části za „ · “ přeloží DeepL."""
+    if not cap or lang == "cs":
+        return cap
+    out = []
+    for part in cap.split(" · "):
+        m = re.match(r"(?i)foto(?:grafie)?:?\s+(.+)", part)
+        if m:
+            out.append(f"{FOTO_WORD[lang]}: {m.group(1)}")
+        else:
+            out.append(tr(part, "", lang))
+    return " · ".join(out)
+
+
 def cfg_photo(key):
     rel = CFG.get(key, "")
     if not rel:
@@ -476,9 +494,9 @@ def home(lang):
         pos = e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")
         alt = e(T("foto_popis", lang))
         imgs = "".join(
-            f'<img data-src="{img_url(p)}" data-cap="{e(tr(hero_caption(p), "", lang))}" alt="{alt}" style="object-position:{pos}">'
+            f'<img data-src="{img_url(p)}" data-cap="{e(tr_caption(hero_caption(p), lang))}" alt="{alt}" style="object-position:{pos}">'
             for p in hphotos)
-        cap0 = tr(hero_caption(hphotos[0]), "", lang)
+        cap0 = tr_caption(hero_caption(hphotos[0]), lang)
         nav = ""
         if len(hphotos) > 1:
             nav = (f'<button class="sl-prev" type="button" aria-label="{e(T("foto_predchozi", lang))}"></button>'
@@ -625,7 +643,7 @@ def project_page(p, lang):
             facts += f'<div><h2>{e(T(key, lang))}</h2>{paras(txt)}</div>'
     gallery = ""
     for f in ph:
-        cap = tr(caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f), "", lang)
+        cap = tr_caption(caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f), lang)
         gallery += (f'<figure><img src="{img_url(f)}" alt="{e(cap or name)}" loading="lazy">'
                     f'{f"<figcaption>{e(cap)}</figcaption>" if cap else ""}</figure>')
     author = p.get("autor_fotografii", "")
