@@ -64,6 +64,10 @@ def pull_sheet():
                 raise RuntimeError("tabulka nevrátila CSV (je nasdílená 'Kdokoli s odkazem'?)")
             (DATA / f"{fname}.csv").write_text(text, encoding="utf-8")
             print(f"· tabulka {sheet} -> data/{fname}.csv")
+            if sheet == "NASTAVENI":
+                import csv, io
+                keys = [r[0].strip() for r in csv.reader(io.StringIO(text))][1:]
+                print(f"  klíče NASTAVENI: {', '.join(k for k in keys if k)}")
         except Exception as ex:
             print(f"! list {sheet} se nepodařilo stáhnout: {describe(ex)}")
 
