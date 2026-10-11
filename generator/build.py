@@ -272,6 +272,19 @@ def protect(body):
     return "".join(p if i % 2 else re.sub(r">([^<>]+)<", text, p) for i, p in enumerate(parts))
 
 
+def browser_translation_allowed():
+    """NASTAVENI prekladac_prohlizece = ANO povolí automatický překlad v prohlížeči."""
+    return yes(CFG.get("prekladac_prohlizece", "NE"))
+
+
+def notr_attr():
+    return "" if browser_translation_allowed() else ' translate="no" class="notranslate"'
+
+
+def notr_meta():
+    return "" if browser_translation_allowed() else '\n<meta name="google" content="notranslate">'
+
+
 def page(lang, path, title, desc, body, alternates=True, noindex=None):
     body = protect(body)
     if noindex is None:
@@ -297,9 +310,9 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
         if t and u:
             links += f'<a href="{e(u)}">{e(t)}</a>\n'
     return f"""<!doctype html>
-<html lang="{lang}">
+<html lang="{lang}"{notr_attr()}>
 <head>
-<meta charset="utf-8">
+<meta charset="utf-8">{notr_meta()}
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
@@ -318,7 +331,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 <div class="strip"></div>
 <header>
 <div class="wrap head">
-<nav class="lang" aria-label="{e(T('jazyk', lang))}">{langnav}</nav>
+<nav class="lang notranslate" translate="no" aria-label="{e(T('jazyk', lang))}">{langnav}</nav>
 <div class="row">
 <a class="logo notranslate" translate="no" href="{url(lang)}" aria-label="KvalitaMísta">{LOGO}</a>
 <details class="menu">
@@ -463,9 +476,9 @@ def home(lang):
         pos = e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")
         alt = e(T("foto_popis", lang))
         imgs = "".join(
-            f'<img data-src="{img_url(p)}" data-cap="{e(hero_caption(p))}" alt="{alt}" style="object-position:{pos}">'
+            f'<img data-src="{img_url(p)}" data-cap="{e(tr(hero_caption(p), "", lang))}" alt="{alt}" style="object-position:{pos}">'
             for p in hphotos)
-        cap0 = hero_caption(hphotos[0])
+        cap0 = tr(hero_caption(hphotos[0]), "", lang)
         nav = ""
         if len(hphotos) > 1:
             nav = (f'<button class="sl-prev" type="button" aria-label="{e(T("foto_predchozi", lang))}"></button>'
@@ -612,7 +625,7 @@ def project_page(p, lang):
             facts += f'<div><h2>{e(T(key, lang))}</h2>{paras(txt)}</div>'
     gallery = ""
     for f in ph:
-        cap = caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f)
+        cap = tr(caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f), "", lang)
         gallery += (f'<figure><img src="{img_url(f)}" alt="{e(cap or name)}" loading="lazy">'
                     f'{f"<figcaption>{e(cap)}</figcaption>" if cap else ""}</figure>')
     author = p.get("autor_fotografii", "")
@@ -772,6 +785,8 @@ def main():
     lines = stav.read_text(encoding="utf-8") if stav.exists() else "fetch.py neběžel (lokální sestavení)\n"
     lines += f"· sestaveno stránek: {len(pages)}; fotografií: {len(list((OUT / 'obrazky').rglob('*.*'))) if (OUT / 'obrazky').exists() else 0}\n"
     lines += f"· strojových překladů: {len(set(translate.used))}\n"
+    if translate.failed:
+        lines += f"! DeepL selhal u {len(translate.failed)} textů (zobrazí se česky do příštího sestavení): {translate.last_error}\n"
     write("stav.txt", lines)
     translate.save()
     translate.cleanup()

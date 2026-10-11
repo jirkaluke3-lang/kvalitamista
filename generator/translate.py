@@ -23,6 +23,8 @@ _cache = None
 _glossary = {}
 _disabled = False
 used = []   # [(lang, cz, preklad)] – pro kontrolní stránku
+failed = []  # texty, které se nepodařilo přeložit
+last_error = ""
 
 
 def _load():
@@ -62,6 +64,24 @@ def _unwrap(text):
 
 
 def _request(path, data, method="POST"):
+    """Volání DeepL s opakováním při přetížení (429) a chybách serveru."""
+    import time, urllib.error
+    for attempt in range(5):
+        try:
+            return _request_once(path, data, method)
+        except urllib.error.HTTPError as ex:
+            if ex.code in (429, 500, 502, 503, 504, 529) and attempt < 4:
+                time.sleep(2 ** attempt * 2)
+                continue
+            raise
+        except (urllib.error.URLError, TimeoutError):
+            if attempt < 4:
+                time.sleep(2 ** attempt * 2)
+                continue
+            raise
+
+
+def _request_once(path, data, method="POST"):
     body = json.dumps(data).encode("utf-8") if data is not None else None
     req = urllib.request.Request(HOST + path, data=body, method=method, headers={
         "Authorization": f"DeepL-Auth-Key {KEY}", "Content-Type": "application/json",
@@ -123,9 +143,14 @@ def translate_many(texts, lang):
             try:
                 res = _request("/v2/translate", payload)
             except Exception as ex:
+                global last_error
+                last_error = str(ex)
                 print(f"! DeepL: překlad do {lang} selhal ({ex}) — použije se čeština.")
-                _disabled = True
-                break
+                failed.extend(texts[i] for i in chunk)
+                if getattr(ex, "code", 0) in (403, 456):   # špatný klíč / vyčerpaná kvóta
+                    _disabled = True
+                    break
+                continue
             for i, tr in zip(chunk, res.get("translations", [])):
                 out[i] = _unwrap(tr.get("text", ""))
                 cache[_key(texts[i], lang)] = out[i]

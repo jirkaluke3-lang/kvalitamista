@@ -51,3 +51,9 @@ Do složky `nastaveni` na Disku nahraj libovolný počet fotek, jejichž název 
 `Hlavní_Foto Petra Kunarová_Bechyně.jpg`. Při každém načtení stránky se ukáže jiná
 (náhodně, ne dvakrát po sobě stejná). Klik na pravou / levou polovinu fotky = další /
 předchozí, na mobilu posun prstem. Pořadí při listování je abecední podle názvu.
+
+## Překlad v prohlížeči
+Web má vlastní jazykové verze CZ / EN / DE, proto je automatický překlad prohlížeče
+(Chrome, Safari) vypnutý – jinak by prohlížeč „překládal" i anglickou verzi zpět
+a vznikaly chyby jako „Kvalita Mjasta“. Povolit jde řádkem v listu NASTAVENI:
+`prekladac_prohlizece` = `ANO`.
