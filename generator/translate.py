@@ -45,7 +45,7 @@ def save():
 
 def _key(text, lang):
     # slovníček je součástí klíče: po jeho změně se texty přeloží znovu
-    return lang + ":v3:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    return lang + ":v4:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
 # Výrazy, které DeepL nesmí měnit (značka, firma, tituly se jmény).
@@ -93,6 +93,9 @@ def _wrap(text, lang):
 
 
 def _unwrap(text):
+    # chráněný výraz je vždy samostatné slovo – DeepL občas „sní“ mezeru u značky
+    text = re.sub(r"(\w)<k>", r"\1 <k>", text)
+    text = re.sub(r"</k>(\w)", r"</k> \1", text)
     t = re.sub(r"[„“\"‚‘']?<k>(.*?)</k>[“”\"‘’']?", r"\1", text, flags=re.S)
     return t.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
@@ -170,7 +173,8 @@ def translate_many(texts, lang):
             chunk = missing[start:start + 40]
             payload = {"text": [_wrap(texts[i], lang) for i in chunk], "source_lang": "CS",
                        "target_lang": TARGET[lang], "preserve_formatting": True,
-                       "tag_handling": "xml", "ignore_tags": ["k"]}
+                       "tag_handling": "xml", "ignore_tags": ["k"],
+                       "outline_detection": False}
             gid = _glossary_id(lang)
             if gid:
                 payload["glossary_id"] = gid
