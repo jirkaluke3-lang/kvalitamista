@@ -33,3 +33,14 @@ python3 -m http.server -d site  # otevři http://localhost:8000
 
 ## Fonty
 Ciutadella (Emtype Foundry), webová licence k dispozici.
+
+## Kontaktní formulář
+Zprávy z formuláře se ukládají do soukromé Google tabulky a chodí e-mailem.
+Skript a postup nasazení: `formular/apps-script.gs`. Adresu nasazené webové
+aplikace vlož do listu NASTAVENI jako `formular_url`. Dokud adresa chybí,
+formulář po odeslání otevře e-mailového klienta s předvyplněnou zprávou.
+
+## Popisky fotografií
+Text za prvním podtržítkem v názvu souboru se zobrazí jako popisek:
+`hlavni_Foto Petra Kunarova_Bern.jpg` → „Foto Petra Kunarova · Bern“.
+Funguje pro hlavní fotku i galerie projektů (`01_Pohled z návsi.jpg`).

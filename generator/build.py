@@ -10,7 +10,7 @@ Jazyky: čeština (/), angličtina (/en/), němčina (/de/).
 Prázdné buňky EN/DE se přeloží automaticky (translate.py), jinak se použije čeština.
 """
 
-import csv, html, json, os, re, shutil, sys
+import csv, html, json, os, re, shutil, sys, urllib.parse
 from datetime import date
 from pathlib import Path
 
@@ -48,6 +48,16 @@ DEFAULTS = {
     "uvod_logo": "KvalitaMísta – úvod",
     "nenalezeno": "Stránka nenalezena.",
     "nenalezeno_odkaz": "Zpět na úvod",
+    "form_jmeno": "Jméno",
+    "form_zprava": "Zpráva",
+    "form_email": "E-mail",
+    "form_telefon": "Telefon",
+    "form_povinne": "povinné",
+    "form_odeslat": "Odeslat zprávu —",
+    "form_souhlas": "Údaje z formuláře použijeme jen k odpovědi na vaši zprávu.",
+    "form_dekujeme": "Děkujeme, zprávu jsme přijali. Ozveme se vám co nejdříve.",
+    "form_chyba": "Zprávu se nepodařilo odeslat. Zavolejte nám prosím nebo napište e-mail.",
+    "form_predmet": "Zpráva z webu KvalitaMísta",
 }
 
 
@@ -182,7 +192,18 @@ def captions(section, slug):
 
 
 def img_url(p):
-    return "/obrazky/" + p.relative_to(IMG).as_posix()
+    return "/obrazky/" + urllib.parse.quote(p.relative_to(IMG).as_posix())
+
+
+def name_caption(p):
+    """Popisek z názvu souboru: vše za prvním podtržítkem (nebo pomlčkou).
+    hlavni_Foto Petra Kunarova_Bern.jpg -> „Foto Petra Kunarova · Bern“"""
+    stem = p.stem
+    for sep in ("_", "-"):
+        if sep in stem:
+            rest = stem.split(sep, 1)[1].strip()
+            return re.sub(r"\s*_\s*", " · ", rest).strip(" ·")
+    return ""
 
 
 def cfg_photo(key):
@@ -196,6 +217,13 @@ def cfg_photo(key):
     for ext in PHOTO_EXT:
         if stem.with_suffix(ext).exists():
             return stem.with_suffix(ext)
+    # soubor s popiskem v názvu: hlavni_Foto … .jpg
+    d, base = stem.parent, stem.name.lower()
+    if d.is_dir():
+        for f in sorted(d.iterdir()):
+            n = f.stem.lower()
+            if f.suffix.lower() in PHOTO_EXT and (n == base or n.startswith(base + "_") or n.startswith(base + "-")):
+                return f
     return None
 
 
@@ -275,6 +303,54 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 """
 
 
+# ---------------------------------------------------------------- kontaktní formulář
+FORM_JS = """<script>
+(function(){
+  var d=document.getElementById('formular'); if(!d) return;
+  function openForm(){ d.open=true; }
+  document.querySelectorAll('[data-open-form]').forEach(function(a){ a.addEventListener('click', openForm); });
+  if(location.hash==='#formular') openForm();
+  var f=d.querySelector('form'), msg=d.querySelector('.form-msg');
+  f.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    if(!f.reportValidity()) return;
+    var url=f.getAttribute('data-endpoint');
+    var data=new FormData(f);
+    if(!url){
+      var body=(data.get('zprava')||'')+'\\n\\n'+(data.get('jmeno')||'')+'\\n'+(data.get('email')||'')+'\\n'+(data.get('telefon')||'');
+      location.href='mailto:'+f.getAttribute('data-mail')+'?subject='+encodeURIComponent(f.getAttribute('data-subject'))+'&body='+encodeURIComponent(body);
+      return;
+    }
+    var btn=f.querySelector('button'); btn.disabled=true;
+    fetch(url,{method:'POST',mode:'no-cors',body:new URLSearchParams(data)})
+      .then(function(){ f.hidden=true; msg.textContent=msg.getAttribute('data-ok'); msg.hidden=false; })
+      .catch(function(){ btn.disabled=false; msg.textContent=msg.getAttribute('data-err'); msg.hidden=false; });
+  });
+})();
+</script>"""
+
+
+def contact_form(lang, mail):
+    endpoint = CFG.get("formular_url", "")
+    req = f' <span class="muted">({e(T("form_povinne", lang))})</span>'
+    return f"""
+<details class="form" id="formular">
+<summary class="btn">{e(T("tlacitko", lang))}</summary>
+<form data-endpoint="{e(endpoint)}" data-mail="{e(mail)}" data-subject="{e(T('form_predmet', lang))}" novalidate>
+<label>{e(T("form_jmeno", lang))}<input name="jmeno" autocomplete="name"></label>
+<label><span>{e(T("form_zprava", lang))}{req}</span><textarea name="zprava" rows="5" required></textarea></label>
+<label><span>{e(T("form_email", lang))}{req}</span><input name="email" type="email" autocomplete="email" required></label>
+<label>{e(T("form_telefon", lang))}<input name="telefon" type="tel" autocomplete="tel"></label>
+<label class="hp" aria-hidden="true">Web<input name="web" tabindex="-1" autocomplete="off"></label>
+<input type="hidden" name="jazyk" value="{lang}">
+<p class="muted measure" style="margin:4px 0 0">{e(T("form_souhlas", lang))}</p>
+<p style="margin:8px 0 0"><button class="btn" type="submit">{e(T("form_odeslat", lang))}</button></p>
+</form>
+<p class="form-msg M" role="status" hidden data-ok="{e(T('form_dekujeme', lang))}" data-err="{e(T('form_chyba', lang))}"></p>
+</details>
+{FORM_JS}"""
+
+
 # ---------------------------------------------------------------- úvodní stránka
 def dash_list(name, lang):
     rows = sorted([r for r in LISTS if r.get("seznam") == name], key=lambda r: num(r.get("poradi")))
@@ -303,6 +379,12 @@ def home(lang):
     mail = CFG.get("email", "")
     tel = re.sub(r"[^\d+]", "", phone)
     hero_photo = cfg_photo("hlavni_foto")
+    hero_html = ""
+    if hero_photo:
+        cap = name_caption(hero_photo) if hero_photo.stem.lower() != "hlavni" else ""
+        pos = e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")
+        hero_html = (f'<figure class="photo"><img src="{img_url(hero_photo)}" alt="{e(T("foto_popis", lang))}" style="object-position:{pos}">'
+                     + (f'<figcaption>{e(cap)}</figcaption>' if cap else "") + "</figure>")
     portrait = cfg_photo("portret")
 
     steps = "".join(
@@ -333,15 +415,15 @@ def home(lang):
 
     body = f"""
 <section class="wrap hero">
-<h1 class="L">{br(T("uvod_nadpis", lang))}</h1>
+<h1 class="L XL">{br(T("uvod_nadpis", lang))}</h1>
 <div class="hero-sub">
 <p class="b p0">{e(T("uvod_stitek", lang))}</p>
 <p class="M" style="margin:12px 0 0;max-width:36ch">{e(T("uvod_text", lang))}</p>
-<p style="margin:32px 0 0"><a class="btn" href="#kontakt">{e(T("tlacitko", lang))}</a></p>
+<p style="margin:32px 0 0"><a class="btn" href="#formular" data-open-form>{e(T("tlacitko", lang))}</a></p>
 </div>
 </section>
 
-{f'<div class="photo"><img src="{img_url(hero_photo)}" alt="{e(T("foto_popis", lang))}" style="object-position:{e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")}"></div>' if hero_photo else ''}
+{hero_html}
 
 <section class="wrap sec">
 <p class="label">{e(T("situace_stitek", lang))}</p>
@@ -407,7 +489,7 @@ def home(lang):
 {f'<a href="tel:{tel}">{e(phone)}</a>' if phone else ''}
 {f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else ''}
 </div>
-{f'<p style="margin:36px 0 0"><a class="btn" href="mailto:{e(mail)}">{e(T("tlacitko", lang))}</a></p>' if mail else ''}
+{contact_form(lang, mail)}
 <div class="imprint">
 <div style="flex:1 1 320px">
 <p class="b" style="margin:0 0 6px;color:var(--fg)">{e(T("znacka_nadpis", lang))}</p>
@@ -441,7 +523,7 @@ def project_page(p, lang):
             facts += f'<div><h2>{e(T(key, lang))}</h2>{paras(txt)}</div>'
     gallery = ""
     for f in ph:
-        cap = caps.get(f.stem, "")
+        cap = caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f)
         gallery += (f'<figure><img src="{img_url(f)}" alt="{e(cap or name)}" loading="lazy">'
                     f'{f"<figcaption>{e(cap)}</figcaption>" if cap else ""}</figure>')
     author = p.get("autor_fotografii", "")
