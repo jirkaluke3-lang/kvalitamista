@@ -20,7 +20,7 @@ function doPost(e) {
   if (!email || !zprava || email.indexOf('@') < 1) return odpoved('chyba');
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const list = ss.getSheetByName('ZPRAVY') || ss.insertSheet('ZPRAVY');
+  const list = ss.getSheetByName('ZPRAVY') || ss.getSheets()[0];
   if (list.getLastRow() === 0) {
     list.appendRow(['přijato', 'jméno', 'e-mail', 'telefon', 'zpráva', 'jazyk']);
     list.setFrozenRows(1);
