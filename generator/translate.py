@@ -45,7 +45,7 @@ def save():
 
 def _key(text, lang):
     # slovníček je součástí klíče: po jeho změně se texty přeloží znovu
-    return lang + ":v4:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    return lang + ":v5:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
 # Výrazy, které DeepL nesmí měnit (značka, firma, tituly se jmény).
@@ -90,6 +90,16 @@ def _wrap(text, lang):
                     re.sub(r"(?<!\w)" + re.escape(cz) + r"(?!\w)", "<k>" + target + "</k>", p)
                     for p in parts)
     return t
+
+
+def _fix_spaces(out, src, lang):
+    """Chráněný výraz nebo pojem ze slovníčku nesmí být slepený s okolním slovem."""
+    terms = {m.group(0) for m in KEEP.finditer(src)}
+    terms |= {t for cz, t in _glossary_terms()[lang] if cz in src}
+    for t in sorted(terms, key=len, reverse=True):
+        out = re.sub(r"(?<=[^\W\d_])" + re.escape(t), " " + t, out)
+        out = re.sub(re.escape(t) + r"(?=[^\W\d_])", t + " ", out)
+    return out
 
 
 def _unwrap(text):
@@ -190,7 +200,7 @@ def translate_many(texts, lang):
                     break
                 continue
             for i, tr in zip(chunk, res.get("translations", [])):
-                out[i] = _unwrap(tr.get("text", ""))
+                out[i] = _fix_spaces(_unwrap(tr.get("text", "")), texts[i], lang)
                 cache[_key(texts[i], lang)] = out[i]
     for i, t in enumerate(texts):
         if t and out[i]:
