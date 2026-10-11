@@ -1,15 +1,35 @@
 # KvalitaMísta — web
 
-Web na adrese **kvalitamista.cz**, hostovaný zdarma na GitHub Pages.
+Statický web **kvalitamista.cz** generovaný z Google tabulky a složky na Google Disku.
+Běží zdarma na GitHub Pages.
 
-## Současný stav
-Dočasná statická stránka (`site/index.html`) podle schváleného návrhu verze 4.
-Stránka má zatím nastaveno `noindex`, aby ji vyhledávače neindexovaly, dokud
-nebudou doplněné údaje a fotografie.
+## Jak upravit obsah
+- **Texty, kroky, projekty, články:** Google tabulka *KvalitaMista-obsah-webu*
+  (složka `web-kvalitamista` na Disku). Návod je v listu **NAVOD**.
+- **Fotografie:** `web-kvalitamista/projekty/<slug>/`, `clanky/<slug>/`,
+  `nastaveni/` (hlavni.jpg, portret.jpg). Soubory pojmenuj 01, 02, 03…
+- **Kdy se změna projeví:** web se sám obnovuje každou hodinu. Hned to jde
+  přes záložku **Actions → Sestavení a nasazení webu → Run workflow**.
 
-## Další krok
-Napojení na Google tabulku a složku na Google Disku (stejně jako web
-IN—FORM—ARCHITEKTI) a automatický překlad EN/DE přes DeepL.
+## Jazyky
+CZ / EN / DE. Prázdné buňky EN a DE se přeloží automaticky přes DeepL,
+ruční text má vždy přednost. Přehled strojových překladů: `/preklady/`.
+Odborné pojmy drží `generator/glosar.csv`.
+
+## Vyhledávače
+Dokud v listu NASTAVENI není řádek `indexovat` = `ANO`, má web nastaveno
+`noindex` (vyhledávače ho nezařadí).
+
+## Nastavení (Settings → Secrets and variables → Actions)
+- `GDRIVE_API_KEY` – klíč Google Cloud omezený na Drive API
+- `DEEPL_API_KEY` – klíč DeepL API
+ID tabulky a složky jsou ve `.github/workflows/deploy.yml`.
+
+## Lokální náhled
+```
+python3 generator/build.py      # použije data/*.csv
+python3 -m http.server -d site  # otevři http://localhost:8000
+```
 
 ## Fonty
 Ciutadella (Emtype Foundry), webová licence k dispozici.

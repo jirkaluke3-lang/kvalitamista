@@ -1,20 +1,43 @@
-name: Nasazení webu
+name: Sestavení a nasazení webu
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"   # každou hodinu načte změny z tabulky a Disku
 permissions:
   contents: read
   pages: write
   id-token: write
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
+env:
+  GSHEET_ID: 1zahK0rflJn9Y3uYxeQUQl0Gi8f1kGe2NVhbaKva3CcY
+  GDRIVE_ROOT_ID: 1MfcSogWSsPxCMpcGxwywpTzGzE45b_c4
+  SITE_URL: https://kvalitamista.cz
 jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: "3.12" }
+      - run: pip install --quiet Pillow
+      - name: Paměť strojových překladů
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: preklady-${{ github.run_id }}
+          restore-keys: preklady-
+      - name: Načíst obsah z Googlu (tabulka + Disk)
+        env:
+          GDRIVE_API_KEY: ${{ secrets.GDRIVE_API_KEY }}
+        run: python generator/fetch.py
+      - name: Sestavit web
+        env:
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+        run: python generator/build.py
       - uses: actions/upload-pages-artifact@v4
         with: { path: site }
   deploy:

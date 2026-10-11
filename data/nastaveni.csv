@@ -1,0 +1,14 @@
+klic,hodnota,poznamka
+telefon,+420 775 944 844,"Zobrazí se v Kontaktu, odkaz pro volání."
+email,dilna@informarchitekti.cz,Později změnit na adresu @kvalitamista.cz.
+ico,23445874,
+dic,CZ23445874,
+adresa_1,"Dlouhá 78, 391 65 Bechyně",
+adresa_2,"Černomořská 16, 110 00 Praha 10",
+odkaz_1_text,informarchitekti.cz,Odkaz pod patičkou.
+odkaz_1_url,https://www.informarchitekti.cz,
+odkaz_2_text,lukesjiri.cz,Odkaz pod patičkou.
+odkaz_2_url,https://lukesjiri.cz,
+hlavni_foto,nastaveni/hlavni.jpg,Fotografie přes celou šířku pod úvodem. Soubor nahraj do složky nastaveni.
+portret,nastaveni/portret.jpg,Portrét v sekci O nás.
+barva_akcentu,#ECE48A,Lipová. Měň jen výjimečně.

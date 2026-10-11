@@ -1,0 +1,43 @@
+klic,cz,en,de,poznamka
+seo_titulek,KvalitaMísta — nezávislý odborný partner obcí a měst,,,Titulek stránky v prohlížeči a ve výsledcích vyhledávání (do 60 znaků).
+seo_popis,"Pomáháme obcím a městům připravit analýzu záměru, správné zadání projektu, výběr zhotovitele a dohled na realizaci.",,,Popis ve výsledcích vyhledávání (do 155 znaků).
+uvod_nadpis,"Některá rozhodnutí
+ovlivní obec
+na desítky let.",,,Hlavní nadpis. Nový řádek = zalomení.
+uvod_stitek,Nezávislý odborný partner obcí a měst,,,
+uvod_text,"Pomáháme obcím a městům připravit analýzu záměru, správné zadání projektu, výběr zhotovitele a dohled na realizaci.",,,
+tlacitko,Domluvit úvodní schůzku —,,,Text tlačítka v úvodu i v Kontaktu.
+foto_popis,Náměstí s lidmi,,,Popis hlavní fotografie (pro nevidomé a vyhledávače).
+situace_stitek,01 — Místo a veřejný prostor,,,
+situace_nadpis,Obec investuje jen několikrát za generaci.,,,
+situace_text,"Náměstí, škola, park, nová ulice. Kvalita se rozhoduje na začátku, v zadání.",,,
+situace_uvod_seznamu,"Obrací se na nás obce, které:",,,Body seznamu jsou v listu SEZNAMY (seznam = situace).
+budovy_stitek,02 — Místo a budovy,,,
+budovy_nadpis,Místo nekončí u fasády.,,,
+budovy_text,"Škola, úřad, knihovna nebo kulturní dům patří k místu stejně jako prostor kolem nich, a lidé je denně používají. Náměstí, ulice a veřejné budovy tvoří jeden celek.",,,
+budovy_text_2,"Posoudíme technický stav budovy. Výsledkem je podklad pro rozhodnutí, zda budovu opravit, přestavět, nebo jí najít nové využití. Zaměřujeme se na:",,,Body seznamu jsou v listu SEZNAMY (seznam = budovy).
+postup_stitek,03 — Jak pracujeme,,,
+postup_nadpis,"Od analýzy
+k zadání.",,,Jednotlivé kroky jsou v listu KROKY.
+postup_zaver,Postup koordinujeme jako celek. Začít lze kterýmkoli krokem.,,,
+postup_specialiste,"Podle povahy úlohy přizveme specialisty, se kterými dlouhodobě spolupracujeme: krajinářské architekty, dopravní inženýry, statiky, specialisty na participaci a další.",,,NÁVRH — uprav seznam profesí podle skutečnosti. Prázdná buňka = věta se nezobrazí.
+praxe_stitek,04 — Z praxe,,,
+praxe_nadpis,Ukázky spolupráce s obcemi a městy.,,,Projekty jsou v listu PROJEKTY.
+praxe_odkaz,Celý případ,,,
+praxe_spoluprace,Ve spolupráci s,,,Předchází jménu ze sloupce spoluprace.
+onas_stitek,05 — O nás,,,
+onas_citat,„Kvalita místa začíná u dobrého zadání.“,,,
+onas_jmeno,Ing. et Ing. arch. Jiří Lukeš,,,
+onas_text,"Architekt a urbanista. Autorizovaný architekt ČKA (04373) pro architekturu a územní plánování, porotce proškolený pro architektonické a urbanistické soutěže. [X] let praxe, spolupráce s [Y] obcemi a městy.",,,DOPLNIT [X] a [Y].
+onas_text_2,V rámci České komory architektů se zapojuje do pro bono pomoci obcím. U složitějších úloh na ni může navazovat spolupráce s KvalitaMísta.,,,
+onas_odkaz,Více o nás,,,
+kontakt_stitek,06 — Kontakt,,,
+kontakt_nadpis,Připravujete investici nebo hledáte směr dalšího rozvoje?,,,
+kontakt_text,"Zavolejte nebo napište. Probereme, co chystáte. Po osobní návštěvě místa navrhneme konkrétní kroky dalšího postupu.",,,
+znacka_nadpis,Kdo stojí za KvalitaMísta,,,
+znacka_text,"KvalitaMísta je značka ateliéru IN—FORM—ARCHITEKTI, s.r.o., který vede Ing. et Ing. arch. Jiří Lukeš.",,,
+paticka_heslo,Místa nevznikají náhodou.,,,
+menu_postup,Jak pracujeme,,,Položky menu.
+menu_praxe,Z praxe,,,
+menu_onas,O nás,,,
+menu_kontakt,Kontakt,,,

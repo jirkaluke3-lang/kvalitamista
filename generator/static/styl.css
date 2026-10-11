@@ -1,0 +1,115 @@
+/* KvalitaMísta — styl webu
+   Tři velikosti písma: L (nadpisy), M (vedlejší text), S (základní text). */
+@font-face{font-family:'Ciutadella';font-weight:400;font-style:normal;font-display:swap;src:url(fonty/Ciutadella-Regular.woff) format('woff')}
+@font-face{font-family:'Ciutadella';font-weight:500;font-style:normal;font-display:swap;src:url(fonty/Ciutadella-Medium.woff) format('woff')}
+@font-face{font-family:'Ciutadella';font-weight:600;font-style:normal;font-display:swap;src:url(fonty/Ciutadella-SemiBold.woff) format('woff')}
+
+:root{
+  color-scheme:light;
+  --fg:#1b1b1b; --bg:#ffffff; --muted:#555555; --soft:#6b6b6b; --sand:#f2f1ed; --ph:#e7e5e0;
+  --accent:#ECE48A;
+  --L:clamp(2.5rem,5.6vw,5.25rem); --M:clamp(1.25rem,1.8vw,1.5rem); --S:1.0625rem;
+  --logo:clamp(2rem,3.2vw,2.75rem);
+  --pad:clamp(16px,4vw,56px); --sec:clamp(72px,9vw,128px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:'Ciutadella',Helvetica,Arial,sans-serif;font-size:var(--S);line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:var(--fg)}a:hover{color:#444}
+a:focus-visible,summary:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+h1,h2,h3{text-wrap:balance}
+img{display:block;max-width:100%;height:auto}
+.skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:16px;background:var(--bg);padding:8px 12px;z-index:20}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.wrap{max-width:1360px;margin:0 auto;padding-left:var(--pad);padding-right:var(--pad)}
+.strip{height:8px;background:var(--accent)}
+
+/* záhlaví */
+header{position:relative}
+.head{padding-top:clamp(20px,2.8vw,40px);padding-bottom:clamp(24px,3vw,36px)}
+.lang{display:flex;justify-content:flex-end;gap:14px;font-weight:500;line-height:1}
+.lang a{text-decoration:none;color:var(--soft)}.lang a[aria-current]{color:var(--fg)}
+.row{margin-top:clamp(8px,.9vw,12px);display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.logo{display:block;font-size:var(--logo);line-height:1.04;font-weight:600;letter-spacing:-.045em;text-decoration:none;color:var(--fg)}
+.logo-dash{display:inline-block;width:.687em;height:.133em;margin:0 .012em 0 .053em;vertical-align:.2em;background:currentColor}
+.logo-i{position:relative;display:inline-block}
+.logo-i::after{content:"";position:absolute;left:.073em;top:-.143em;width:.687em;height:.133em;background:currentColor}
+.menu{font-size:var(--logo);line-height:1}
+.menu>summary{display:block;margin-top:.104em;padding:0 0 0 .1em;list-style:none;cursor:pointer}
+.menu>summary::-webkit-details-marker{display:none}
+.menu>summary span{display:block;width:.687em;height:.133em;background:var(--fg)}
+.menu>summary span+span{margin-top:.133em}
+.menu[open]>summary span:nth-child(2){opacity:0}
+.menu nav{position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--bg);border-bottom:2px solid var(--fg)}
+.menu ul{max-width:1360px;margin:0 auto;padding:8px var(--pad) 40px;list-style:none;font-size:var(--L);line-height:1.1;font-weight:600;letter-spacing:-.03em}
+.menu li{border-top:1px solid var(--fg);padding:10px 0}.menu li:first-child{border-top-width:2px}
+.menu a{text-decoration:none}.menu a:hover{text-decoration:underline;text-underline-offset:6px}
+
+/* typografie */
+.L{margin:0;font-size:var(--L);line-height:1;font-weight:600;letter-spacing:-.03em}
+.M{font-size:var(--M);line-height:1.35;font-weight:500}
+.label{margin:0;padding-bottom:14px;border-bottom:2px solid var(--fg);font-weight:600}
+.b{font-weight:600}
+.muted{color:var(--muted)}
+.p0{margin:0}
+.measure{max-width:52ch}
+.btn{display:inline-block;padding:18px 30px;background:var(--accent);color:var(--fg);text-decoration:none;font-weight:600}
+.btn:hover{color:var(--fg);background:#e2d96f}
+.link{font-weight:600;text-underline-offset:5px;text-decoration-thickness:2px}
+
+/* sekce */
+.sec{padding-top:var(--sec);padding-bottom:var(--sec)}
+.sec.cont{padding-top:0}
+.hero{padding-top:clamp(56px,9vw,128px);padding-bottom:clamp(56px,7vw,96px)}
+.hero-sub{margin-top:clamp(40px,5vw,72px);border-top:2px solid var(--fg);padding-top:24px}
+.split{margin-top:40px;display:flex;flex-wrap:wrap;gap:32px 64px}
+.split>*{flex:1 1 420px;min-width:0}
+.dash{margin:12px 0 0;padding:0;list-style:none}
+.dash li{display:flex;gap:16px;padding:18px 0;border-top:1px solid var(--fg)}
+.dash li:last-child{border-bottom:1px solid var(--fg)}
+.photo{height:clamp(280px,42vw,620px);background:var(--ph)}
+.photo img{width:100%;height:100%;object-fit:cover}
+.accent{background:var(--accent)}
+.sand{background:var(--sand)}
+.steps{margin:clamp(48px,6vw,80px) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:40px 28px}
+.steps li{border-top:2px solid var(--fg);padding-top:18px}
+.steps h3{margin:20px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.steps p{margin:10px 0 0}
+.cards{margin-top:clamp(40px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:56px 40px}
+.card .img{aspect-ratio:4/3;background:var(--ph);overflow:hidden}
+.card .img img{width:100%;height:100%;object-fit:cover}
+.card h3{margin:8px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.about{margin-top:clamp(48px,6vw,80px);display:flex;flex-wrap:wrap;gap:32px 56px}
+.portrait{flex:0 1 340px;max-width:100%;aspect-ratio:4/5;background:#e1dfd9;overflow:hidden}
+.portrait img{width:100%;height:100%;object-fit:cover}
+.big-contact{margin-top:40px;display:flex;flex-direction:column;gap:4px}
+.big-contact a{font-size:var(--L);line-height:1.05;font-weight:600;letter-spacing:-.03em;text-decoration:none;overflow-wrap:anywhere}
+.imprint{margin-top:clamp(56px,7vw,96px);padding-top:24px;border-top:1px solid var(--fg);display:flex;flex-wrap:wrap;gap:24px 56px;color:#444}
+.imprint>*{min-width:0}
+
+/* detail projektu / článek */
+.detail-head{padding-top:clamp(40px,6vw,88px)}
+.facts{margin-top:clamp(32px,4vw,56px);display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px 40px}
+.facts h2{margin:0;padding-bottom:10px;border-bottom:1px solid var(--fg);font-size:var(--S);font-weight:600}
+.facts p{margin:12px 0 0}
+.gallery{margin-top:clamp(40px,5vw,72px);display:grid;gap:24px}
+.gallery figure{margin:0}.gallery figcaption{margin-top:8px;color:var(--muted)}
+.prose p{margin:0 0 1em;max-width:62ch}
+.list-articles{margin-top:40px;padding:0;list-style:none}
+.list-articles li{border-top:1px solid var(--fg);padding:24px 0}
+.list-articles li:last-child{border-bottom:1px solid var(--fg)}
+.list-articles a{text-decoration:none}.list-articles a:hover h2{text-decoration:underline;text-underline-offset:6px}
+.list-articles h2{margin:6px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+
+/* patička */
+.foot{background:var(--fg);color:#fff}
+.foot .wrap{padding-top:clamp(48px,6vw,80px);padding-bottom:clamp(48px,6vw,80px)}
+.foot-logo{margin:0;font-size:clamp(3.5rem,12.5vw,11.5rem);line-height:1.04;font-weight:600;letter-spacing:-.045em;color:#fff}
+.foot-claim{margin:clamp(20px,2.5vw,32px) 0 0;color:#fff}
+.foot-links{padding-top:24px;padding-bottom:32px;display:flex;flex-wrap:wrap;gap:8px 28px}
+
+/* kontrolní stránka překladů */
+.tr{width:100%;border-collapse:collapse;margin-top:32px}
+.tr th,.tr td{border-top:1px solid #ccc;padding:10px 12px 10px 0;vertical-align:top;text-align:left}
