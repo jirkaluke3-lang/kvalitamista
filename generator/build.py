@@ -597,6 +597,11 @@ def main():
     write("robots.txt", "User-agent: *\nAllow: /\nDisallow: /preklady/\n" + f"Sitemap: {SITE_URL}/sitemap.xml\n")
     write("sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
           + "".join(f"<url><loc>{SITE_URL}{u}</loc></url>\n" for u in pages) + "</urlset>\n")
+    stav = DATA / "stav.txt"
+    lines = stav.read_text(encoding="utf-8") if stav.exists() else "fetch.py neběžel (lokální sestavení)\n"
+    lines += f"· sestaveno stránek: {len(pages)}; fotografií: {len(list((OUT / 'obrazky').rglob('*.*'))) if (OUT / 'obrazky').exists() else 0}\n"
+    lines += f"· strojových překladů: {len(set(translate.used))}\n"
+    write("stav.txt", lines)
     translate.save()
     translate.cleanup()
     print(f"Hotovo: {len(pages)} stránek v site/ (indexování: {'ANO' if index else 'NE'}).")

@@ -14,8 +14,16 @@ Když proměnné chybí, skript nic nedělá a build použije data/*.csv
 a obrazky/… z repozitáře (režim náhledu). Jen standardní knihovna.
 """
 
-import os, sys, json, shutil, urllib.parse, urllib.request
+import os, sys, json, shutil, urllib.parse, urllib.request, urllib.error, builtins
+from datetime import datetime, timezone
 from pathlib import Path
+
+LOG = []
+
+
+def print(*a, **k):  # noqa: A001 – zapisuje i do data/stav.txt (stránka /stav.txt)
+    LOG.append(" ".join(str(x) for x in a))
+    builtins.print(*a, **k)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -57,7 +65,7 @@ def pull_sheet():
             (DATA / f"{fname}.csv").write_text(text, encoding="utf-8")
             print(f"· tabulka {sheet} -> data/{fname}.csv")
         except Exception as ex:
-            print(f"! list {sheet} se nepodařilo stáhnout: {ex}")
+            print(f"! list {sheet} se nepodařilo stáhnout: {describe(ex)}")
 
 
 def drive_list(folder_id):
@@ -131,11 +139,28 @@ def pull_drive():
             pull_folder(sections[sec], IMG / sec, f"{sec}/")
 
 
+def describe(ex):
+    if isinstance(ex, urllib.error.HTTPError):
+        try:
+            body = ex.read().decode("utf-8", "replace")[:400]
+        except Exception:
+            body = ""
+        return f"HTTP {ex.code}: {body}"
+    return str(ex)
+
+
 if __name__ == "__main__":
-    print("Načítám obsah z Googlu…")
+    print("Načítám obsah z Googlu… " + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
+    print(f"· klíč Google Drive: {'nastaven' if API_KEY else 'CHYBÍ (secret GDRIVE_API_KEY)'}")
+    print(f"· klíč DeepL: {'nastaven' if os.environ.get('DEEPL_API_KEY') else 'chybí (secret DEEPL_API_KEY)'}")
     try:
         pull_sheet()
+    except Exception as ex:
+        print(f"! chyba při načítání tabulky: {describe(ex)}")
+    try:
         pull_drive()
     except Exception as ex:
-        print(f"! chyba při načítání z Googlu: {ex}", file=sys.stderr)
+        print(f"! chyba při načítání Disku: {describe(ex)}")
     print("Hotovo.")
+    DATA.mkdir(exist_ok=True)
+    (DATA / "stav.txt").write_text("\n".join(LOG) + "\n", encoding="utf-8")

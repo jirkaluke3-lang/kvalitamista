@@ -2,3 +2,4 @@ site/
 obrazky/
 data/cache/
 __pycache__/
+data/stav.txt
