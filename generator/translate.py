@@ -9,7 +9,7 @@ Automatický překlad prázdných buněk EN / DE přes DeepL.
 • Bez proměnné DEEPL_API_KEY se nic nepřekládá a použije se čeština.
 """
 
-import os, json, csv, hashlib, urllib.request, urllib.parse
+import os, re, json, csv, hashlib, urllib.request, urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,7 +42,23 @@ def save():
 
 
 def _key(text, lang):
-    return lang + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    return lang + ":v2:" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+
+
+# Výrazy, které DeepL nesmí měnit (značka, firma, tituly se jmény).
+KEEP = re.compile(r"Kvalita\s?M[íi]sta|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?|ČKA"
+                  r"|(?:(?:Ing|Mgr|Bc|MgA|Dr|doc|prof)\.(?:\s+et)?\s+)+(?:arch\.\s+)?"
+                  r"[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+")
+
+
+def _wrap(text):
+    t = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return KEEP.sub(lambda m: "<k>" + m.group(0) + "</k>", t)
+
+
+def _unwrap(text):
+    t = re.sub(r"[„“\"‚‘']?<k>(.*?)</k>[“”\"‘’']?", r"\1", text, flags=re.S)
+    return t.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
 def _request(path, data, method="POST"):
@@ -98,8 +114,9 @@ def translate_many(texts, lang):
     if missing and KEY and not _disabled:
         for start in range(0, len(missing), 40):
             chunk = missing[start:start + 40]
-            payload = {"text": [texts[i] for i in chunk], "source_lang": "CS",
-                       "target_lang": TARGET[lang], "preserve_formatting": True}
+            payload = {"text": [_wrap(texts[i]) for i in chunk], "source_lang": "CS",
+                       "target_lang": TARGET[lang], "preserve_formatting": True,
+                       "tag_handling": "xml", "ignore_tags": ["k"]}
             gid = _glossary_id(lang)
             if gid:
                 payload["glossary_id"] = gid
@@ -110,7 +127,7 @@ def translate_many(texts, lang):
                 _disabled = True
                 break
             for i, tr in zip(chunk, res.get("translations", [])):
-                out[i] = tr.get("text", "")
+                out[i] = _unwrap(tr.get("text", ""))
                 cache[_key(texts[i], lang)] = out[i]
     for i, t in enumerate(texts):
         if t and out[i]:

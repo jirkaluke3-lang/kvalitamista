@@ -252,7 +252,7 @@ def cfg_photo(key):
     return None
 
 
-LOGO = ('<span aria-hidden="true">KVALITA<span class="logo-dash"></span><br>'
+LOGO = ('<span aria-hidden="true" translate="no" class="notranslate">KVALITA<span class="logo-dash"></span><br>'
         'M<span class="logo-i">I</span>STA</span>')
 
 
@@ -262,12 +262,12 @@ LOGO = ('<span aria-hidden="true">KVALITA<span class="logo-dash"></span><br>'
 NO_TRANSLATE = re.compile(
     r"(?:(?:Ing|Mgr|Bc|MgA|Dr|doc|prof|PhDr|RNDr)\.(?:\s+et)?\s+)+(?:arch\.\s+)?"
     r"[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+"
-    r"|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?|KvalitaMísta|ČKA")
+    r"|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?|Kvalita\s?M[íi]sta|ČKA")
 
 
 def protect(body):
     def text(m):
-        return ">" + NO_TRANSLATE.sub(lambda n: f'<span translate="no">{n.group(0)}</span>', m.group(1)) + "<"
+        return ">" + NO_TRANSLATE.sub(lambda n: f'<span translate="no" class="notranslate">{n.group(0)}</span>', m.group(1)) + "<"
     parts = re.split(r"(<script\b.*?</script>|<title>.*?</title>)", body, flags=re.S)
     return "".join(p if i % 2 else re.sub(r">([^<>]+)<", text, p) for i, p in enumerate(parts))
 
@@ -320,7 +320,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 <div class="wrap head">
 <nav class="lang" aria-label="{e(T('jazyk', lang))}">{langnav}</nav>
 <div class="row">
-<a class="logo" href="{url(lang)}" aria-label="{e(T('uvod_logo', lang))}">{LOGO}</a>
+<a class="logo notranslate" translate="no" href="{url(lang)}" aria-label="KvalitaMísta">{LOGO}</a>
 <details class="menu">
 <summary aria-label="{e(T('menu_label', lang))}"><span></span><span></span><span></span></summary>
 <nav aria-label="{e(T('hlavni_menu', lang))}" onclick="if(event.target.closest('a'))this.closest('details').open=false"><ul>{menu}</ul></nav>
@@ -333,7 +333,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 </main>
 <footer>
 <div class="foot"><div class="wrap">
-<p class="foot-logo"><span class="sr">KvalitaMísta</span>{LOGO}</p>
+<p class="foot-logo notranslate" translate="no"><span class="sr">KvalitaMísta</span>{LOGO}</p>
 <p class="foot-claim M">{e(T("paticka_heslo", lang))}</p>
 </div></div>
 <nav class="wrap foot-links" aria-label="{e(T('odkazy', lang))}">
