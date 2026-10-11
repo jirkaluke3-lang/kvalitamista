@@ -59,7 +59,13 @@ def pull_sheet():
         url = (f"https://docs.google.com/spreadsheets/d/{GSHEET_ID}"
                f"/gviz/tq?tqx=out:csv&headers=1&sheet={urllib.parse.quote(sheet)}")
         try:
-            text = fetch(url)
+            # celý rozsah listu – i řádky přidané pod naformátovanou tabulku
+            try:
+                text = fetch(url + "&range=A1:AZ1000")
+                if text.lstrip().startswith("<"):
+                    raise RuntimeError("rozsah nevrátil CSV")
+            except Exception:
+                text = fetch(url)
             if text.lstrip().startswith("<"):
                 raise RuntimeError("tabulka nevrátila CSV (je nasdílená 'Kdokoli s odkazem'?)")
             (DATA / f"{fname}.csv").write_text(text, encoding="utf-8")
