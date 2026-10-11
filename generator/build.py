@@ -10,7 +10,7 @@ Jazyky: čeština (/), angličtina (/en/), němčina (/de/).
 Prázdné buňky EN/DE se přeloží automaticky (translate.py), jinak se použije čeština.
 """
 
-import csv, html, json, os, re, shutil, sys, urllib.parse
+import csv, html, json, os, re, shutil, sys, unicodedata, urllib.parse
 from datetime import date
 from pathlib import Path
 
@@ -57,6 +57,8 @@ DEFAULTS = {
     "form_souhlas": "Údaje z formuláře použijeme jen k odpovědi na vaši zprávu.",
     "form_dekujeme": "Děkujeme, zprávu jsme přijali. Ozveme se vám co nejdříve.",
     "form_chyba": "Zprávu se nepodařilo odeslat. Zavolejte nám prosím nebo napište e-mail.",
+    "foto_predchozi": "Předchozí fotografie",
+    "foto_dalsi": "Další fotografie",
     "form_predmet": "Zpráva z webu KvalitaMísta",
 }
 
@@ -206,6 +208,29 @@ def name_caption(p):
     return ""
 
 
+def plain(s):
+    """Bez diakritiky a malými písmeny: „Hlavní_Bern“ -> „hlavni_bern“."""
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
+
+
+def hero_photos():
+    """Všechny fotky ve složce nastaveni, jejichž název začíná „Hlavní_“ (nebo je „hlavni“)."""
+    d = IMG / "nastaveni"
+    if not d.is_dir():
+        return []
+    out = []
+    for f in sorted(d.iterdir(), key=lambda f: plain(f.name)):
+        n = plain(f.stem)
+        if f.suffix.lower() in PHOTO_EXT and (n == "hlavni" or n.startswith(("hlavni_", "hlavni-"))):
+            out.append(f)
+    return out
+
+
+def hero_caption(p):
+    cap = name_caption(p) if plain(p.stem) != "hlavni" else ""
+    return "" if re.fullmatch(r"[\d\s·.]*", cap) else cap
+
+
 def cfg_photo(key):
     rel = CFG.get(key, "")
     if not rel:
@@ -330,6 +355,42 @@ FORM_JS = """<script>
 </script>"""
 
 
+# ---------------------------------------------------------------- titulní fotografie (střídání)
+SLIDES_JS = """<script>
+(function(){
+  var fig=document.currentScript.previousElementSibling;
+  var imgs=fig.querySelectorAll('img[data-src]'), n=imgs.length, cap=fig.querySelector('figcaption'),
+      cnt=fig.querySelector('.sl-count'), cur=-1, last=-1;
+  if(!n) return;
+  try{ last=parseInt(localStorage.getItem('km-hero'),10); }catch(e){}
+  var start=Math.floor(Math.random()*n);
+  if(n>1 && start===last) start=(start+1)%n;
+  function load(i){ var im=imgs[(i+n)%n]; if(!im.getAttribute('src')) im.src=im.getAttribute('data-src'); }
+  function show(i){
+    i=(i+n)%n; if(i===cur) return;
+    load(i);
+    if(cur>=0) imgs[cur].classList.remove('on');
+    imgs[i].classList.add('on'); cur=i;
+    cap.textContent=imgs[i].getAttribute('data-cap')||'';
+    if(cnt) cnt.textContent=(i+1)+' / '+n;
+    try{ localStorage.setItem('km-hero', i); }catch(e){}
+    if(n>1){ setTimeout(function(){ load(i+1); load(i-1); }, 800); }
+  }
+  show(start);
+  if(n<2) return;
+  fig.querySelector('.sl-prev').addEventListener('click', function(){ show(cur-1); });
+  fig.querySelector('.sl-next').addEventListener('click', function(){ show(cur+1); });
+  var x0=null, y0=0;
+  fig.addEventListener('touchstart', function(ev){ x0=ev.touches[0].clientX; y0=ev.touches[0].clientY; }, {passive:true});
+  fig.addEventListener('touchend', function(ev){
+    if(x0===null) return;
+    var dx=ev.changedTouches[0].clientX-x0, dy=ev.changedTouches[0].clientY-y0; x0=null;
+    if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)) show(cur+(dx<0?1:-1));
+  }, {passive:true});
+})();
+</script>"""
+
+
 def contact_form(lang, mail):
     endpoint = CFG.get("formular_url", "")
     req = f' <span class="muted">({e(T("form_povinne", lang))})</span>'
@@ -378,13 +439,25 @@ def home(lang):
     phone = CFG.get("telefon", "")
     mail = CFG.get("email", "")
     tel = re.sub(r"[^\d+]", "", phone)
-    hero_photo = cfg_photo("hlavni_foto")
+    hphotos = hero_photos()
+    if not hphotos and cfg_photo("hlavni_foto"):
+        hphotos = [cfg_photo("hlavni_foto")]
     hero_html = ""
-    if hero_photo:
-        cap = name_caption(hero_photo) if hero_photo.stem.lower() != "hlavni" else ""
+    if hphotos:
         pos = e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")
-        hero_html = (f'<figure class="photo"><img src="{img_url(hero_photo)}" alt="{e(T("foto_popis", lang))}" style="object-position:{pos}">'
-                     + (f'<figcaption>{e(cap)}</figcaption>' if cap else "") + "</figure>")
+        alt = e(T("foto_popis", lang))
+        imgs = "".join(
+            f'<img data-src="{img_url(p)}" data-cap="{e(hero_caption(p))}" alt="{alt}" style="object-position:{pos}">'
+            for p in hphotos)
+        cap0 = hero_caption(hphotos[0])
+        nav = ""
+        if len(hphotos) > 1:
+            nav = (f'<button class="sl-prev" type="button" aria-label="{e(T("foto_predchozi", lang))}"></button>'
+                   f'<button class="sl-next" type="button" aria-label="{e(T("foto_dalsi", lang))}"></button>'
+                   f'<span class="sl-count" aria-hidden="true"></span>')
+        hero_html = (f'<figure class="photo slides">{imgs}'
+                     f'<noscript><img src="{img_url(hphotos[0])}" alt="{alt}" style="object-position:{pos}"></noscript>'
+                     f'{nav}<figcaption>{e(cap0)}</figcaption></figure>{SLIDES_JS}')
     portrait = cfg_photo("portret")
 
     steps = "".join(

@@ -44,3 +44,10 @@ formulář po odeslání otevře e-mailového klienta s předvyplněnou zprávou
 Text za prvním podtržítkem v názvu souboru se zobrazí jako popisek:
 `hlavni_Foto Petra Kunarova_Bern.jpg` → „Foto Petra Kunarova · Bern“.
 Funguje pro hlavní fotku i galerie projektů (`01_Pohled z návsi.jpg`).
+
+## Více titulních fotografií
+Do složky `nastaveni` na Disku nahraj libovolný počet fotek, jejichž název začíná
+`Hlavní_` (nebo `hlavni_`, na velikosti písmen a diakritice nezáleží), např.
+`Hlavní_Foto Petra Kunarová_Bechyně.jpg`. Při každém načtení stránky se ukáže jiná
+(náhodně, ne dvakrát po sobě stejná). Klik na pravou / levou polovinu fotky = další /
+předchozí, na mobilu posun prstem. Pořadí při listování je abecední podle názvu.

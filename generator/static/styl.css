@@ -121,6 +121,17 @@ header{position:relative}
 .photo{position:relative;margin:0}
 .photo figcaption{position:absolute;left:var(--pad);bottom:14px;color:#fff;font-size:.875rem;text-shadow:0 1px 3px rgba(0,0,0,.55)}
 
+/* střídání titulních fotografií: klik vlevo = předchozí, vpravo = další, na mobilu posun prstem */
+.slides{overflow:hidden}
+.slides img[data-src]{position:absolute;inset:0;opacity:0;transition:opacity .7s ease}
+.slides img.on{opacity:1}
+.slides figcaption{z-index:2;pointer-events:none}
+.sl-prev,.sl-next{position:absolute;top:0;bottom:0;z-index:1;width:50%;margin:0;padding:0;border:0;background:transparent;-webkit-tap-highlight-color:transparent}
+.sl-prev{left:0;cursor:w-resize}.sl-next{right:0;cursor:e-resize}
+.sl-prev:focus-visible,.sl-next:focus-visible{outline:3px solid #fff;outline-offset:-6px}
+.sl-count{position:absolute;right:var(--pad);bottom:14px;z-index:2;color:#fff;font-size:.875rem;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.slides img[data-src]{transition:none}}
+
 /* kontaktní formulář */
 .form{margin-top:36px}
 .form>summary{list-style:none;cursor:pointer}
