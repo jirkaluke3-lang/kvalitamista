@@ -341,7 +341,7 @@ def home(lang):
 </div>
 </section>
 
-{f'<div class="photo"><img src="{img_url(hero_photo)}" alt="{e(T("foto_popis", lang))}"></div>' if hero_photo else ''}
+{f'<div class="photo"><img src="{img_url(hero_photo)}" alt="{e(T("foto_popis", lang))}" style="object-position:{e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")}"></div>' if hero_photo else ''}
 
 <section class="wrap sec">
 <p class="label">{e(T("situace_stitek", lang))}</p>
