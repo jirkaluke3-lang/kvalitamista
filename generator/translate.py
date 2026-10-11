@@ -44,7 +44,8 @@ def save():
 
 
 def _key(text, lang):
-    return lang + ":v2:" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    # slovníček je součástí klíče: po jeho změně se texty přeloží znovu
+    return lang + ":v3:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
 # Výrazy, které DeepL nesmí měnit (značka, firma, tituly se jmény).
@@ -53,9 +54,42 @@ KEEP = re.compile(r"Kvalita\s?M[íi]sta|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?
                   r"[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+")
 
 
-def _wrap(text):
+_terms = None
+
+
+def _glossary_terms():
+    """Slovníček jako {jazyk: [(cz, překlad), …]} – delší výrazy první."""
+    global _terms
+    if _terms is None:
+        _terms = {"en": [], "de": []}
+        if GLOSAR.exists():
+            with GLOSAR.open(encoding="utf-8") as f:
+                for r in csv.reader(f, delimiter=";"):
+                    if len(r) >= 3 and r[0].strip() and not r[0].startswith("#"):
+                        for lang, col in (("en", 1), ("de", 2)):
+                            if r[col].strip():
+                                _terms[lang].append((r[0].strip(), r[col].strip()))
+        for v in _terms.values():
+            v.sort(key=lambda x: -len(x[0]))
+    return _terms
+
+
+def _glossary_hash():
+    return hashlib.sha1(GLOSAR.read_bytes()).hexdigest()[:8] if GLOSAR.exists() else "0"
+
+
+def _wrap(text, lang):
+    """Chráněné výrazy a pojmy ze slovníčku se do DeepL pošlou už hotové v <k>…</k>."""
     t = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return KEEP.sub(lambda m: "<k>" + m.group(0) + "</k>", t)
+    t = KEEP.sub(lambda m: "<k>" + m.group(0) + "</k>", t)
+    for cz, target in _glossary_terms()[lang]:
+        if cz == target:
+            continue
+        parts = re.split(r"(<k>.*?</k>)", t)
+        t = "".join(p if p.startswith("<k>") else
+                    re.sub(r"(?<!\w)" + re.escape(cz) + r"(?!\w)", "<k>" + target + "</k>", p)
+                    for p in parts)
+    return t
 
 
 def _unwrap(text):
@@ -134,7 +168,7 @@ def translate_many(texts, lang):
     if missing and KEY and not _disabled:
         for start in range(0, len(missing), 40):
             chunk = missing[start:start + 40]
-            payload = {"text": [_wrap(texts[i]) for i in chunk], "source_lang": "CS",
+            payload = {"text": [_wrap(texts[i], lang) for i in chunk], "source_lang": "CS",
                        "target_lang": TARGET[lang], "preserve_formatting": True,
                        "tag_handling": "xml", "ignore_tags": ["k"]}
             gid = _glossary_id(lang)
