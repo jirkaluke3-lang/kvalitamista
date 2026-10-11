@@ -257,7 +257,23 @@ LOGO = ('<span aria-hidden="true">KVALITA<span class="logo-dash"></span><br>'
 
 
 # ---------------------------------------------------------------- kostra stránky
+# Jména, tituly a značky, které nesmí měnit překladač v prohlížeči (Chrome/Safari
+# jinak udělá z „arch.“ třeba „oblouk“).
+NO_TRANSLATE = re.compile(
+    r"(?:(?:Ing|Mgr|Bc|MgA|Dr|doc|prof|PhDr|RNDr)\.(?:\s+et)?\s+)+(?:arch\.\s+)?"
+    r"[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][\wÀ-ž]+"
+    r"|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?|KvalitaMísta|ČKA")
+
+
+def protect(body):
+    def text(m):
+        return ">" + NO_TRANSLATE.sub(lambda n: f'<span translate="no">{n.group(0)}</span>', m.group(1)) + "<"
+    parts = re.split(r"(<script\b.*?</script>|<title>.*?</title>)", body, flags=re.S)
+    return "".join(p if i % 2 else re.sub(r">([^<>]+)<", text, p) for i, p in enumerate(parts))
+
+
 def page(lang, path, title, desc, body, alternates=True, noindex=None):
+    body = protect(body)
     if noindex is None:
         noindex = not yes(CFG.get("indexovat", "NE"))
     canonical = SITE_URL + url(lang, path)
