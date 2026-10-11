@@ -200,7 +200,7 @@ def img_url(p):
 def name_caption(p):
     """Popisek z názvu souboru: vše za prvním podtržítkem (nebo pomlčkou).
     hlavni_Foto Petra Kunarova_Bern.jpg -> „Foto Petra Kunarova · Bern“"""
-    stem = p.stem
+    stem = unicodedata.normalize("NFC", p.stem)
     for sep in ("_", "-"):
         if sep in stem:
             rest = stem.split(sep, 1)[1].strip()
