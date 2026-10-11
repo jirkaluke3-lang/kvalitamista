@@ -10,7 +10,7 @@
  * list NASTAVENI, řádek  formular_url.
  */
 
-const KOMU = 'dilna@informarchitekti.cz';   // kam posílat upozornění na novou zprávu
+const KOMU = 'dilna@informarchitekti.cz, dilna.inform@gmail.com';   // kam posílat upozornění na novou zprávu
 
 function doPost(e) {
   const p = (e && e.parameter) || {};
