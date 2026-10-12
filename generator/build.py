@@ -21,6 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 IMG = ROOT / "obrazky"
 STATIC = Path(__file__).resolve().parent / "static"
+# verze stylu podle obsahu souboru – prohlížeč po každé změně načte nový styl
+CSS_VER = __import__("hashlib").md5((STATIC / "styl.css").read_bytes()).hexdigest()[:8]
 OUT = ROOT / "site"
 SITE_URL = os.environ.get("SITE_URL", "https://kvalitamista.cz").rstrip("/")
 LANGS = ["cs", "en", "de"]
@@ -144,8 +146,17 @@ def prefetch(lang):
 
 
 # ---------------------------------------------------------------- pomocné
+# Česká typografie: jednopísmenné předložky a spojky (v, s, z, k, u, o, a, i)
+# nesmí zůstat na konci řádku – za ně se vkládá nezlomitelná mezera.
+NBSP_RE = re.compile(r'(?<![^\s„“"(\[–—])([vszkuoaiVSZKUOAI]) (?=\S)')
+
+
+def nb(s):
+    return NBSP_RE.sub("\\1\u00a0", s or "")
+
+
 def e(s):
-    return html.escape(s or "", quote=True)
+    return html.escape(nb(s), quote=True)
 
 
 def br(s):
@@ -341,7 +352,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 <meta property="og:type" content="website">
 <meta property="og:url" content="{canonical}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/styl.css">
+<link rel="stylesheet" href="/styl.css?v={CSS_VER}">
 <style>:root{{--accent:{e(accent)}}}</style>
 </head>
 <body>
@@ -508,7 +519,7 @@ def home(lang):
     portrait = cfg_photo("portret")
 
     steps = "".join(
-        f'<li><span class="L" style="display:block">{i:02d}</span>'
+        f'<li><span class="num">{i:02d}</span>'
         f'<h3>{e(F(s, "nazev", lang))}</h3><p>{e(F(s, "popis", lang))}</p></li>'
         for i, s in enumerate(STEPS, 1))
 
@@ -563,8 +574,9 @@ def home(lang):
 <h2 class="L">{e(T("budovy_nadpis", lang))}</h2>
 <div>
 <p class="M p0" style="max-width:34ch">{e(T("budovy_text", lang))}</p>
-<p class="measure" style="margin:28px 0 0">{e(T("budovy_text_2", lang))}</p>
+<p class="b" style="margin:28px 0 0">{e(T("budovy_text_2", lang))}</p>
 {dash_list("budovy", lang)}
+{f'<p class="measure" style="margin:24px 0 0">{e(T("budovy_zaver", lang))}</p>' if T("budovy_zaver", lang) else ''}
 </div>
 </div>
 </section>
@@ -604,7 +616,7 @@ def home(lang):
 <section id="kontakt" class="wrap sec">
 <p class="label">{e(T("kontakt_stitek", lang))}</p>
 <h2 class="L" style="margin-top:40px;max-width:18ch">{e(T("kontakt_nadpis", lang))}</h2>
-<p class="M" style="margin:24px 0 0">{e(T("kontakt_text", lang))}</p>
+<p class="M" style="margin:24px 0 0;max-width:44ch">{e(T("kontakt_text", lang))}</p>
 <div class="big-contact">
 {f'<a href="tel:{tel}">{e(phone)}</a>' if phone else ''}
 {f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else ''}

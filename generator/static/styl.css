@@ -75,7 +75,8 @@ header{position:relative}
 .sand{background:var(--sand)}
 .steps{margin:clamp(48px,6vw,80px) 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:40px 28px}
 .steps li{border-top:2px solid var(--fg);padding-top:18px}
-.steps h3{margin:20px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.steps .num{display:block;font-size:var(--M);line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums}
+.steps h3{margin:6px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
 .steps p{margin:10px 0 0}
 .cards{margin-top:clamp(40px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:56px 40px}
 .card .img{aspect-ratio:4/3;background:var(--ph);overflow:hidden}
@@ -114,8 +115,9 @@ header{position:relative}
 .tr{width:100%;border-collapse:collapse;margin-top:32px}
 .tr th,.tr td{border-top:1px solid #ccc;padding:10px 12px 10px 0;vertical-align:top;text-align:left}
 
-/* titulní nadpis – o stupeň větší než ostatní nadpisy */
-.XL{font-size:clamp(2.75rem,6.6vw,6.25rem);line-height:.98;letter-spacing:-.035em}
+/* titulní nadpis – zřetelně větší než ostatní nadpisy (cca o třetinu), ale lehčí řez:
+   autoritu nese velikost a prostor, ne tloušťka písma */
+.XL{font-size:clamp(2.75rem,7.7vw,6.875rem);line-height:1;font-weight:500;letter-spacing:-.035em}
 
 /* popisek hlavní fotografie */
 .photo{position:relative;margin:0}
