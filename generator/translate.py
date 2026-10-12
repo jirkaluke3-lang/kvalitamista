@@ -45,7 +45,7 @@ def save():
 
 def _key(text, lang):
     # slovníček je součástí klíče: po jeho změně se texty přeloží znovu
-    return lang + ":v5:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    return lang + ":v6:" + _glossary_hash() + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()
 
 
 # Výrazy, které DeepL nesmí měnit (značka, firma, tituly se jmény).
@@ -85,9 +85,9 @@ def _wrap(text, lang):
     for cz, target in _glossary_terms()[lang]:
         if cz == target:
             continue
-        parts = re.split(r"(<k>.*?</k>)", t)
-        t = "".join(p if p.startswith("<k>") else
-                    re.sub(r"(?<!\w)" + re.escape(cz) + r"(?!\w)", "<k>" + target + "</k>", p)
+        parts = re.split(r"(<k[^>]*>.*?</k>)", t)
+        t = "".join(p if p.startswith("<k") else
+                    re.sub(r"(?<!\w)" + re.escape(cz) + r"(?!\w)", '<k g="1">' + target + "</k>", p)
                     for p in parts)
     return t
 
@@ -104,9 +104,12 @@ def _fix_spaces(out, src, lang):
 
 def _unwrap(text):
     # chráněný výraz je vždy samostatné slovo – DeepL občas „sní“ mezeru u značky
-    text = re.sub(r"(\w)<k>", r"\1 <k>", text)
+    # DeepL k pevně vloženému pojmu ze slovníčku občas přilepí koncovku pádu
+    # („Flächennutzungsplan</k>s“) – ta by po oddělení visela jako samostatné „s“
+    text = re.sub(r'(<k g="1">.*?</k>)[a-zäöüß]{1,2}(?![^\W\d_])', r"\1", text, flags=re.S)
+    text = re.sub(r"(\w)<k\b", r"\1 <k", text)
     text = re.sub(r"</k>(\w)", r"</k> \1", text)
-    t = re.sub(r"[„“\"‚‘']?<k>(.*?)</k>[“”\"‘’']?", r"\1", text, flags=re.S)
+    t = re.sub(r"[„“\"‚‘']?<k[^>]*>(.*?)</k>[“”\"‘’']?", r"\1", text, flags=re.S)
     return t.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
