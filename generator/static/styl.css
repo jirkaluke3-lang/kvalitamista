@@ -38,8 +38,9 @@ header{position:relative}
 .menu{font-size:var(--logo);line-height:1}
 .menu>summary{display:block;margin-top:.104em;padding:0 0 0 .1em;list-style:none;cursor:pointer}
 .menu>summary::-webkit-details-marker{display:none}
-.menu>summary span{display:block;width:.687em;height:.133em;background:var(--fg)}
-.menu>summary span+span{margin-top:.133em}
+/* čárky menu = pomlčka z loga: délka .689em, tloušťka i mezera 1 modul (.125em) – logo má 3,01em */
+.menu>summary span{display:block;width:.689em;height:.125em;background:var(--fg)}
+.menu>summary span+span{margin-top:.125em}
 .menu[open]>summary span:nth-child(2){opacity:0}
 .menu nav{position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--bg);border-bottom:2px solid var(--fg)}
 .menu ul{max-width:calc(1360px + 2*var(--pad));margin:0 auto;padding:8px var(--pad) 40px;list-style:none;font-size:var(--L);line-height:1.1;font-weight:600;letter-spacing:-.03em}
