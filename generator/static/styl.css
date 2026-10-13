@@ -9,7 +9,7 @@
   --fg:#1b1b1b; --bg:#ffffff; --muted:#555555; --soft:#6b6b6b; --sand:#f2f1ed; --ph:#e7e5e0;
   --accent:#ECE48A;
   --L:clamp(2.5rem,5.6vw,5.25rem); --M:clamp(1.25rem,1.8vw,1.5rem); --S:1.0625rem;
-  --logo:clamp(2rem,3.2vw,2.75rem);
+  --logo:clamp(2.1rem,3.2vw,2.75rem);
   --pad:clamp(16px,4vw,56px); --sec:clamp(72px,9vw,128px);
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -33,9 +33,8 @@ header{position:relative}
 .lang a{text-decoration:none;color:var(--soft)}.lang a[aria-current]{color:var(--fg)}
 .row{margin-top:clamp(8px,.9vw,12px);display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
 .logo{display:block;font-size:var(--logo);line-height:1.04;font-weight:600;letter-spacing:-.045em;text-decoration:none;color:var(--fg)}
-.logo-dash{display:inline-block;width:.687em;height:.133em;margin:0 .012em 0 .053em;vertical-align:.2em;background:currentColor}
-.logo-i{position:relative;display:inline-block}
-.logo-i::after{content:"";position:absolute;left:.073em;top:-.143em;width:.687em;height:.133em;background:currentColor}
+/* logo = SVG v křivkách; šířka 3,01 em → výška verzálek odpovídá velikosti písma (min. 100 px podle manuálu) */
+.logo-svg{display:block;width:3.01em;height:auto}
 .menu{font-size:var(--logo);line-height:1}
 .menu>summary{display:block;margin-top:.104em;padding:0 0 0 .1em;list-style:none;cursor:pointer}
 .menu>summary::-webkit-details-marker{display:none}
