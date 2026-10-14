@@ -16,22 +16,26 @@ budovy_stitek,02 — Místo a budovy,,,
 budovy_nadpis,Místo nekončí u fasády.,,,
 budovy_text,"Škola, úřad, knihovna nebo kulturní dům patří k místu stejně jako prostor kolem nich, a lidé je denně používají. Náměstí, ulice a veřejné budovy tvoří jeden celek.",,,
 budovy_text_2,"Posoudíme technický stav budovy. Výsledkem je podklad pro rozhodnutí, zda budovu opravit, přestavět, nebo jí najít nové využití. Zaměřujeme se na:",,,Body seznamu jsou v listu SEZNAMY (seznam = budovy).
-postup_stitek,03 — Jak pracujeme,,,
+bydleni_stitek,03 — Místo a bydlení,03 — Place and housing,03 — Ort und Wohnen,
+bydleni_nadpis,Dobré bydlení začíná u místa.,Good housing begins with the place.,Gutes Wohnen beginnt beim Ort.,
+bydleni_text,"Obecní bytový dům, nájemní byty, komunitní nebo seniorské bydlení. Kvalitu bydlení neurčuje jen dům, ale také ulice, dvůr, parter a dostupnost služeb.","A municipal apartment building, rental flats, community or senior housing. The quality of housing is shaped not only by the building, but also by the street, the courtyard, the ground floor and access to services.","Ein kommunales Wohnhaus, Mietwohnungen, gemeinschaftliches Wohnen oder Wohnen im Alter. Die Qualität des Wohnens bestimmt nicht nur das Haus, sondern auch die Straße, der Hof, das Erdgeschoss und die Nähe zu Versorgung und Diensten.",
+bydleni_uvod_seznamu,"Obrací se na nás obce, které:",Municipalities come to us when they:,"An uns wenden sich Gemeinden, die:",Body seznamu jsou v listu SEZNAMY (seznam = bydleni).
+postup_stitek,04 — Jak pracujeme,,,
 postup_nadpis,"Od analýzy
 k zadání.",,,Jednotlivé kroky jsou v listu KROKY.
 postup_zaver,Postup koordinujeme jako celek. Začít lze kterýmkoli krokem.,,,
 postup_specialiste,"Podle povahy úlohy přizveme specialisty, se kterými dlouhodobě spolupracujeme: krajinářské architekty, dopravní inženýry, statiky, specialisty na participaci a další.",,,NÁVRH — uprav seznam profesí podle skutečnosti. Prázdná buňka = věta se nezobrazí.
-praxe_stitek,04 — Z praxe,,,
+praxe_stitek,05 — Z praxe,,,
 praxe_nadpis,Ukázky spolupráce s obcemi a městy.,,,Projekty jsou v listu PROJEKTY.
 praxe_odkaz,Celý případ,,,
 praxe_spoluprace,Ve spolupráci s,,,Předchází jménu ze sloupce spoluprace.
-onas_stitek,05 — O nás,,,
+onas_stitek,06 — O nás,,,
 onas_citat,„Kvalita místa začíná u dobrého zadání.“,,,
 onas_jmeno,Ing. et Ing. arch. Jiří Lukeš,,,
 onas_text,"Architekt a urbanista. Autorizovaný architekt ČKA (04373) pro architekturu a územní plánování, porotce proškolený pro architektonické a urbanistické soutěže. [X] let praxe, spolupráce s [Y] obcemi a městy.",,,DOPLNIT [X] a [Y].
 onas_text_2,V rámci České komory architektů se zapojuje do pro bono pomoci obcím. U složitějších úloh na ni může navazovat spolupráce s KvalitaMísta.,,,
 onas_odkaz,Více o nás,,,
-kontakt_stitek,06 — Kontakt,,,
+kontakt_stitek,07 — Kontakt,,,
 kontakt_nadpis,Připravujete investici nebo hledáte směr dalšího rozvoje?,,,
 kontakt_text,"Zavolejte nebo napište. Probereme, co chystáte. Po osobní návštěvě místa navrhneme konkrétní kroky dalšího postupu.",,,
 znacka_nadpis,Kdo stojí za KvalitaMísta,,,

@@ -541,6 +541,28 @@ def home(lang):
 """
 
     spec = T("postup_specialiste", lang)
+
+    # Sekce „Místo a bydlení“ – zobrazí se jen tehdy, když má v tabulce vyplněný nadpis
+    housing_html = ""
+    if T("bydleni_nadpis", lang):
+        h_intro = T("bydleni_uvod_seznamu", lang)
+        h_text2 = T("bydleni_text_2", lang)
+        h_end = T("bydleni_zaver", lang)
+        housing_html = f"""<section id="bydleni" class="wrap sec cont">
+<p class="label">{e(T("bydleni_stitek", lang))}</p>
+<div class="split">
+<h2 class="L">{e(T("bydleni_nadpis", lang))}</h2>
+<div>
+<p class="M p0" style="max-width:34ch">{e(T("bydleni_text", lang))}</p>
+{f'<p class="b" style="margin:28px 0 0">{e(h_intro)}</p>' if h_intro else ''}
+{dash_list("bydleni", lang)}
+{f'<p class="b" style="margin:28px 0 0">{e(h_text2)}</p>' if h_text2 else ''}
+{dash_list("bydleni_posoudime", lang)}
+{f'<p class="measure" style="margin:24px 0 0">{e(h_end)}</p>' if h_end else ''}
+</div>
+</div>
+</section>"""
+
     onas_url = CFG.get("onas_url", "")
     imprint_ids = " · ".join(x for x in (f"IČO {CFG.get('ico')}" if CFG.get("ico") else "",
                                          f"DIČ {CFG.get('dic')}" if CFG.get("dic") else "") if x)
@@ -582,6 +604,8 @@ def home(lang):
 </div>
 </div>
 </section>
+
+{housing_html}
 
 <section id="postup" class="accent">
 <div class="wrap sec">

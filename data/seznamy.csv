@@ -7,3 +7,7 @@ budovy,1,"technický stav konstrukcí a technického vybavení s propočtem nák
 budovy,2,"současné využití budovy a možnosti do budoucna,",,,ANO
 budovy,3,"vazbu budovy na veřejná prostranství náměstí, ulici nebo park,",,,ANO
 budovy,4,pořadí oprav a návaznost na investiční plán obce.,,,ANO
+bydleni,1,"zvažují výstavbu nájemních bytů pro mladé rodiny, seniory nebo potřebné profese","are considering new rental flats for young families, seniors or key workers","neue Mietwohnungen für junge Familien, ältere Menschen oder wichtige Berufsgruppen erwägen",ANO
+bydleni,2,chystají rekonstrukci obecního bytového domu,are preparing the renovation of a municipal apartment building,die Sanierung eines kommunalen Wohnhauses vorbereiten,ANO
+bydleni,3,hledají vhodný pozemek nebo dům pro komunitní či seniorské bydlení,are looking for a suitable site or building for community or senior housing,ein geeignetes Grundstück oder Gebäude für gemeinschaftliches oder altersgerechtes Wohnen suchen,ANO
+bydleni,4,připravují žádost o podporu dostupného nájemního bydlení,are preparing an application for affordable rental housing support,einen Antrag auf Förderung von bezahlbarem Mietwohnen vorbereiten,ANO
