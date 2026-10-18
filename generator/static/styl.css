@@ -98,6 +98,10 @@ header{position:relative}
 .gallery{margin-top:clamp(40px,5vw,72px);display:grid;gap:24px}
 .gallery figure{margin:0}.gallery figcaption{margin-top:8px;color:var(--muted)}
 .prose p{margin:0 0 1em;max-width:62ch}
+.prose h2{font-size:1.35em;line-height:1.2;margin:2em 0 .6em;max-width:30ch}
+.prose ul,.prose ol{margin:0 0 1.2em;padding-left:1.3em;max-width:62ch}
+.prose li{margin:0 0 .45em}
+.prose a{text-underline-offset:3px;overflow-wrap:anywhere}
 .list-articles{margin-top:40px;padding:0;list-style:none}
 .list-articles li{border-top:1px solid var(--fg);padding:24px 0}
 .list-articles li:last-child{border-bottom:1px solid var(--fg)}

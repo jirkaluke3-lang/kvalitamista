@@ -173,6 +173,37 @@ def paras(s, cls=""):
     return "\n".join(out)
 
 
+def inline(s):
+    """Escapovaný text s **tučným**, *kurzívou* a [odkazy](https://…)."""
+    out = e(s)
+    out = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
+                 lambda m: f'<a href="{m.group(2)}" rel="noopener">{m.group(1)}</a>', out)
+    out = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", out)
+    out = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<em>\1</em>", out)
+    return out
+
+
+def rich(s):
+    """Delší text článku: bloky oddělené prázdným řádkem.
+    „## Nadpis“ = mezititulek, řádky „- “ = odrážky, „1. “ = číslovaný seznam,
+    jinak odstavec. V textu lze použít **tučně**, *kurzívu* a [odkaz](https://…)."""
+    out = []
+    for block in re.split(r"\n\s*\n", (s or "").strip()):
+        lines = [x.strip() for x in block.strip().splitlines() if x.strip()]
+        if not lines:
+            continue
+        if lines[0].startswith("## ") and len(lines) == 1:
+            out.append(f"<h2>{inline(lines[0][3:])}</h2>")
+        elif all(x.startswith(("- ", "• ")) for x in lines):
+            out.append("<ul>" + "".join(f"<li>{inline(x[2:])}</li>" for x in lines) + "</ul>")
+        elif all(re.match(r"\d+\.\s", x) for x in lines):
+            items = [inline(re.sub(r"^\d+\.\s+", "", x)) for x in lines]
+            out.append("<ol>" + "".join(f"<li>{i}</li>" for i in items) + "</ol>")
+        else:
+            out.append("<p>" + "<br>".join(inline(x) for x in lines) + "</p>")
+    return "\n".join(out)
+
+
 def prefix(lang):
     return "" if lang == "cs" else f"{lang}/"
 
@@ -743,7 +774,7 @@ def article_page(a, lang):
 <h1 class="L" style="margin-top:40px;max-width:20ch">{e(name)}</h1>
 <p class="M measure" style="margin:28px 0 0">{e(F(a, "perex", lang))}</p>
 {lead}
-<div class="prose" style="margin-top:clamp(32px,4vw,56px)">{paras(F(a, "text", lang))}</div>
+<div class="prose" style="margin-top:clamp(32px,4vw,56px)">{rich(F(a, "text", lang))}</div>
 {rest}
 <p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
 </article>
