@@ -93,6 +93,14 @@ def drive_download(file_id, dest):
     dest.write_bytes(fetch(url, binary=True))
 
 
+def drive_export(file_id, dest):
+    """Google dokument -> Markdown (text článku s tabulkami pro obrázky)."""
+    url = (f"https://www.googleapis.com/drive/v3/files/{file_id}/export"
+           f"?mimeType=text%2Fmarkdown&key={API_KEY}")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(fetch(url, binary=True))
+
+
 def is_folder(f):
     return f["mimeType"] == "application/vnd.google-apps.folder"
 
@@ -110,6 +118,16 @@ def pull_folder(folder_id, dest_dir, label):
     got, skipped, dup = 0, [], []
     for fl in drive_list(folder_id):
         if is_folder(fl):
+            continue
+        if fl.get("mimeType") == "application/vnd.google-apps.document":
+            dest = dest_dir / "_text.md"
+            if dest.exists():
+                dup.append(fl["name"]); continue
+            try:
+                drive_export(fl["id"], dest)
+                print(f"· Disk {label}: text článku z dokumentu „{fl['name']}“")
+            except Exception as ex:
+                print(f"! dokument „{fl['name']}“ se nepodařilo načíst: {describe(ex)}")
             continue
         name = wanted_name(fl)
         if name is None:

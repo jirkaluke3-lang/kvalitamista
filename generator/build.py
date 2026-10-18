@@ -100,6 +100,86 @@ ARTICLES = sorted([r for r in read_csv("clanky") if yes(r.get("publikovat")) and
                   key=lambda r: r.get("datum", ""), reverse=True)
 
 
+IMG_NAME = re.compile(r"^[\w.\- ]+\.(jpe?g|png|webp|avif|gif)$", re.I)
+
+
+def doc_to_text(md):
+    """Google dokument (export do Markdownu) -> značky článku.
+    Tabulka o 1 sloupci a 2 řádcích: 1. řádek název fotky (01.jpg), 2. řádek popis a autor.
+    Odkaz na obrázek ve 2. řádku (např. Wikimedia Commons) se použije, když fotka ve složce chybí."""
+    def unesc(t):
+        return re.sub(r"\\([\\`*_{}\[\]()#+\-.!|>~])", r"\1", t)
+    lines = [re.sub(r"^(>\s?)+", "", x).rstrip() for x in md.replace("\r", "").split("\n")]
+    out, i, prev = [], 0, None
+    def emit(text, kind):
+        nonlocal prev
+        if out and (kind != prev or kind in ("p", "h", "fig_new")):
+            out.append("")
+        out.append(text)
+        prev = "fig" if kind == "fig_new" else kind
+    while i < len(lines):
+        x = lines[i].strip()
+        if not x:
+            if prev not in ("fig",):
+                prev = None
+            i += 1; continue
+        if x.startswith("|"):
+            rows = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                r = lines[i].strip()
+                if not re.match(r"^\|[\s:\-|]+\|$", r):
+                    cells = [c.strip() for c in re.split(r"(?<!\\)\|", r.strip("|"))]
+                    rows.append(" ".join(c for c in cells if c))
+                i += 1
+            name = unesc(re.sub(r"\*+", "", rows[0])).strip() if rows else ""
+            if IMG_NAME.match(name):
+                cap = rows[1] if len(rows) > 1 else ""
+                fb = ""
+                def strip_img_link(m):
+                    nonlocal fb
+                    if re.search(r"\.(jpe?g|png|webp|gif)(\?.*)?$", m.group(2), re.I) or "upload.wikimedia.org" in m.group(2):
+                        fb = fb or m.group(2)
+                        return m.group(1)
+                    return m.group(0)
+                cap = re.sub(r"\[([^\]]*)\]\((https?://[^)\s]+)\)", strip_img_link, cap)
+                cap = unesc(cap).replace("|", "/").strip()
+                m = re.search(r"\s*(?:·\s*)?(Foto\s*:.*)$", cap)
+                credit = m.group(1).strip() if m else ""
+                cap = cap[:m.start()].strip(" ·") if m else cap
+                src = name + (f"::{fb}" if fb else "")
+                # obrázky hned za sebou (jen prázdné řádky mezi) = vedle sebe
+                emit(f"![{cap} | {credit}]({src.replace(' ', '%20')})", "fig" if prev == "fig" else "fig_new")
+            else:
+                for r in rows:
+                    emit(unesc(r), "p")
+            continue
+        if re.match(r"^!\[[^\]]*\]\(", x):   # vložený obrázek v dokumentu – ignorovat
+            i += 1; continue
+        m = re.match(r"^#{1,6}\s+(.*)$", x)
+        if m:
+            emit("## " + unesc(m.group(1)).replace("**", "").strip(), "h")
+        elif re.match(r"^[*\-+]\s+", x):
+            emit("- " + unesc(re.sub(r"^[*\-+]\s+", "", x)), "ul")
+        elif re.match(r"^\d+[.)]\s+", x):
+            emit(unesc(x), "ol")
+        else:
+            if prev == "p" and lines[i - 1].endswith("  "):
+                out.append(unesc(x))
+            else:
+                emit(unesc(x), "p")
+        i += 1
+    return "\n".join(out).strip()
+
+
+for _a in ARTICLES:
+    _doc = IMG / "clanky" / _a["slug"] / "_text.md"
+    if _doc.exists():
+        _a["text_cz"] = doc_to_text(_doc.read_text(encoding="utf-8"))
+        for _k in ("text_en", "text_de"):
+            if _a.get(_k, "").startswith("Text článku je v Google dokumentu"):
+                _a[_k] = ""
+
+
 # ---------------------------------------------------------------- jazyky
 def tr(cz, manual, lang):
     """Ruční překlad > automatický překlad > čeština."""
@@ -253,12 +333,22 @@ def figure_block(lines):
                 continue
             href = "/obrazky/web/" + urllib.parse.quote(local.name)
         else:
-            f = next((p for p in ART_PH.get("list", []) if p.stem.split("_")[0] == src), None)
-            if not f:
-                print(f"! obrázek „{src}“ není ve složce článku na Disku — vynechán")
+            src = urllib.parse.unquote(src)
+            name, _, fallback = src.partition("::")
+            stem = Path(name).stem.lower()
+            f = next((p for p in ART_PH.get("list", [])
+                      if p.name.lower() == name.lower() or p.stem.split("_")[0].lower() == stem), None)
+            if f:
+                ART_PH.setdefault("used", set()).add(f)
+                local, href = f, img_url(f)
+            elif fallback:
+                local = remote_image(fallback)
+                if not local:
+                    continue
+                href = "/obrazky/web/" + urllib.parse.quote(local.name)
+            else:
+                print(f"· obrázek „{name}“ zatím není ve složce článku na Disku — místo zůstane prázdné")
                 continue
-            ART_PH.setdefault("used", set()).add(f)
-            local, href = f, img_url(f)
         w, h = img_size(local)
         items.append((href, w / h, parts[0]))
     if not items:
