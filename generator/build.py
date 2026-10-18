@@ -183,16 +183,112 @@ def inline(s):
     return out
 
 
+IMG_LINE = re.compile(r"^!\[(.*)\]\((\S+)\)$")
+WEB_CACHE = DATA / "cache" / "web"
+LICENSES = {"CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "CC BY-SA 3.0": "https://creativecommons.org/licenses/by-sa/3.0/",
+            "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
+            "CC0": "https://creativecommons.org/publicdomain/zero/1.0/"}
+REMOTE = []   # (zdroj, cíl) – vzdálené obrázky ke zkopírování do webu
+ART_PH = {}   # fotky z Disku pro právě sestavovaný článek
+
+
+def is_img_block(block):
+    lines = [x.strip() for x in block.strip().splitlines() if x.strip()]
+    return bool(lines) and all(IMG_LINE.match(x) for x in lines)
+
+
+def remote_image(src):
+    """Stáhne obrázek z webu (např. Wikimedia Commons) do mezipaměti; vrátí cestu nebo None."""
+    import hashlib, urllib.request
+    name = urllib.parse.unquote(src.split("?")[0].rsplit("/", 1)[-1])
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-", unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode())
+    local = WEB_CACHE / f"{hashlib.sha1(src.encode()).hexdigest()[:8]}-{stem}"
+    if not local.exists():
+        try:
+            WEB_CACHE.mkdir(parents=True, exist_ok=True)
+            req = urllib.request.Request(src, headers={"User-Agent": "kvalitamista.cz-build/1.0 (jirka.luke3@gmail.com)"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                local.write_bytes(r.read())
+            print(f"· staženo z webu: {name}")
+        except Exception as ex:
+            print(f"! obrázek {src} se nepodařilo stáhnout ({ex}) — v článku vynechán")
+            return None
+    REMOTE.append((local, OUT / "obrazky" / "web" / local.name))
+    return local
+
+
+def img_size(p):
+    try:
+        from PIL import Image, ImageOps
+        return ImageOps.exif_transpose(Image.open(p)).size
+    except Exception:
+        return (3, 2)
+
+
+def credit_html(credit, src):
+    """„Foto: autor, CC BY-SA 4.0“ – licence a zdroj jako odkazy."""
+    out = e(credit)
+    for lic, href in LICENSES.items():
+        if lic in credit:
+            out = out.replace(e(lic), f'<a href="{href}" rel="noopener license">{e(lic)}</a>', 1)
+            break
+    m = re.search(r"upload\.wikimedia\.org/wikipedia/commons/(?:thumb/)?\w/\w\w/([^/?]+)", src)
+    if m:
+        out += f' · <a href="https://commons.wikimedia.org/wiki/File:{m.group(1)}" rel="noopener">Wikimedia Commons</a>'
+    return out
+
+
+def figure_block(lines):
+    """Jeden nebo více obrázků vedle sebe se společným popiskem.
+    Řádek: ![Popisek | Foto: autor, licence](https://… nebo 02)"""
+    items, cap, credit, first_src = [], "", "", ""
+    for x in lines:
+        m = IMG_LINE.match(x)
+        text, src = m.group(1), m.group(2)
+        parts = [t.strip() for t in text.split("|")]
+        cap = cap or parts[0]
+        credit = credit or (parts[1] if len(parts) > 1 else "")
+        first_src = first_src or src
+        if src.startswith("http"):
+            local = remote_image(src)
+            if not local:
+                continue
+            href = "/obrazky/web/" + urllib.parse.quote(local.name)
+        else:
+            f = next((p for p in ART_PH.get("list", []) if p.stem.split("_")[0] == src), None)
+            if not f:
+                print(f"! obrázek „{src}“ není ve složce článku na Disku — vynechán")
+                continue
+            ART_PH.setdefault("used", set()).add(f)
+            local, href = f, img_url(f)
+        w, h = img_size(local)
+        items.append((href, w / h, parts[0]))
+    if not items:
+        return ""
+    imgs = "".join(f'<div class="fig-i" style="flex:{r:.3f} 1 0"><img src="{href}" alt="{e(alt)}" loading="lazy"></div>'
+                   for href, r, alt in items)
+    cls = "fig fig-row" if len(items) > 1 else ("fig fig-tall" if items[0][1] < 1 else "fig")
+    capt = ""
+    if cap or credit:
+        capt = (f"<figcaption>{inline(cap)}"
+                f'{f"<span class=fig-cr>{credit_html(credit, first_src)}</span>" if credit else ""}</figcaption>')
+    return f'<figure class="{cls}"><div class="fig-imgs">{imgs}</div>{capt}</figure>'
+
+
 def rich(s):
     """Delší text článku: bloky oddělené prázdným řádkem.
     „## Nadpis“ = mezititulek, řádky „- “ = odrážky, „1. “ = číslovaný seznam,
-    jinak odstavec. V textu lze použít **tučně**, *kurzívu* a [odkaz](https://…)."""
+    „![Popisek | Foto: autor, licence](https://… nebo 02)“ = velký obrázek
+    (více takových řádků pod sebou = obrázky vedle sebe), jinak odstavec. V textu lze použít **tučně**, *kurzívu* a [odkaz](https://…)."""
     out = []
     for block in re.split(r"\n\s*\n", (s or "").strip()):
         lines = [x.strip() for x in block.strip().splitlines() if x.strip()]
         if not lines:
             continue
-        if lines[0].startswith("## ") and len(lines) == 1:
+        if all(IMG_LINE.match(x) for x in lines):
+            out.append(figure_block(lines))
+        elif lines[0].startswith("## ") and len(lines) == 1:
             out.append(f"<h2>{inline(lines[0][3:])}</h2>")
         elif all(x.startswith(("- ", "• ")) for x in lines):
             out.append("<ul>" + "".join(f"<li>{inline(x[2:])}</li>" for x in lines) + "</ul>")
@@ -758,15 +854,48 @@ def articles_index(lang):
     return page(lang, "clanky/", f'{T("clanky_nadpis", lang)} — KvalitaMísta', T("clanky_nadpis", lang), body)
 
 
+def article_text(a, lang):
+    """Text článku; obrázkové bloky se do DeepL neposílají, překládá se jen jejich popisek."""
+    cz = a.get("text_cz", "")
+    manual = a.get(f"text_{COL[lang]}", "") if lang != "cs" else ""
+    if lang == "cs" or manual or not cz:
+        return F(a, "text", lang)
+    out, prose = [], []
+    def flush():
+        if prose:
+            out.append(tr("\n\n".join(prose), "", lang))
+            prose.clear()
+    for block in re.split(r"\n\s*\n", cz.strip()):
+        if is_img_block(block):
+            flush()
+            lines = []
+            for x in block.strip().splitlines():
+                m = IMG_LINE.match(x.strip())
+                if not m:
+                    continue
+                parts = [t.strip() for t in m.group(1).split("|")]
+                parts[0] = tr(parts[0], "", lang)
+                lines.append(f"![{' | '.join(parts)}]({m.group(2)})")
+            out.append("\n".join(lines))
+        else:
+            prose.append(block)
+    flush()
+    return "\n\n".join(out)
+
+
 def article_page(a, lang):
     name = F(a, "nazev", lang)
     ph = photos("clanky", a["slug"])
     caps = captions("clanky", a["slug"])
+    ART_PH.clear()
+    ART_PH["list"] = ph
+    text_html = rich(article_text(a, lang))
+    used = ART_PH.get("used", set())
     lead = (f'<figure style="margin:clamp(32px,4vw,56px) 0 0"><img src="{img_url(ph[0])}" alt="{e(caps.get(ph[0].stem, name))}"></figure>'
-            if ph else "")
+            if ph and ph[0] not in used else "")
     rest = "".join(f'<figure style="margin:24px 0 0"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
                    f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
-                   for f in ph[1:])
+                   for f in ph[1:] if f not in used)
     desc = a.get("seo_popis_cz", "") if lang == "cs" else tr(a.get("seo_popis_cz", "") or a.get("perex_cz", ""), "", lang)
     body = f"""
 <article class="wrap detail-head sec">
@@ -774,7 +903,7 @@ def article_page(a, lang):
 <h1 class="L" style="margin-top:40px;max-width:20ch">{e(name)}</h1>
 <p class="M measure" style="margin:28px 0 0">{e(F(a, "perex", lang))}</p>
 {lead}
-<div class="prose" style="margin-top:clamp(32px,4vw,56px)">{rich(F(a, "text", lang))}</div>
+<div class="prose" style="margin-top:clamp(32px,4vw,56px)">{text_html}</div>
 {rest}
 <p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
 </article>
@@ -816,7 +945,25 @@ def not_found():
     return page("cs", "404.html", "404 — KvalitaMísta", "Stránka nenalezena", body, alternates=False, noindex=True)
 
 
+def copy_remote():
+    try:
+        from PIL import Image, ImageOps
+    except ImportError:
+        Image = None
+    for src, dest in set(REMOTE):
+        if dest.exists():
+            continue
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            im = ImageOps.exif_transpose(Image.open(src))
+            im.thumbnail((2400, 2400))
+            im.convert("RGB").save(dest, "JPEG", quality=82, optimize=True, progressive=True)
+        except Exception:
+            shutil.copy2(src, dest)
+
+
 def copy_images():
+    copy_remote()
     if not IMG.exists():
         return
     try:

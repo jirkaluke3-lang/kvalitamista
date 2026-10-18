@@ -102,6 +102,15 @@ header{position:relative}
 .prose ul,.prose ol{margin:0 0 1.2em;padding-left:1.3em;max-width:62ch}
 .prose li{margin:0 0 .45em}
 .prose a{text-underline-offset:3px;overflow-wrap:anywhere}
+.fig{margin:clamp(40px,5vw,72px) 0;max-width:1120px}
+.fig-tall{max-width:620px}
+.fig-imgs{display:flex;gap:clamp(8px,1vw,14px)}
+.fig-i{min-width:0}
+.fig img{display:block;width:100%;height:auto}
+.fig figcaption{margin-top:14px;max-width:62ch;font-size:.875rem;line-height:1.5;color:var(--muted)}
+.fig-cr{display:block;margin-top:2px;font-size:.8125rem;opacity:.8}
+.fig-cr a{color:inherit}
+
 .list-articles{margin-top:40px;padding:0;list-style:none}
 .list-articles li{border-top:1px solid var(--fg);padding:24px 0}
 .list-articles li:last-child{border-bottom:1px solid var(--fg)}
