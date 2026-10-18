@@ -233,9 +233,6 @@ def credit_html(credit, src):
         if lic in credit:
             out = out.replace(e(lic), f'<a href="{href}" rel="noopener license">{e(lic)}</a>', 1)
             break
-    m = re.search(r"upload\.wikimedia\.org/wikipedia/commons/(?:thumb/)?\w/\w\w/([^/?]+)", src)
-    if m:
-        out += f' · <a href="https://commons.wikimedia.org/wiki/File:{m.group(1)}" rel="noopener">Wikimedia Commons</a>'
     return out
 
 

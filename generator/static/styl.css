@@ -109,7 +109,7 @@ header{position:relative}
 .fig img{display:block;width:100%;height:auto}
 .fig figcaption{margin-top:14px;max-width:62ch;font-size:.875rem;line-height:1.5;color:var(--muted)}
 .fig-cr{display:block;margin-top:2px;font-size:.8125rem;opacity:.8}
-.fig-cr a{color:inherit}
+.fig-cr a{color:inherit;text-decoration:none}
 
 .list-articles{margin-top:40px;padding:0;list-style:none}
 .list-articles li{border-top:1px solid var(--fg);padding:24px 0}
