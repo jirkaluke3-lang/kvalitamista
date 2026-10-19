@@ -190,3 +190,5 @@ img{display:block;max-width:100%;height:auto}
 .offer[open] summary::after{content:"–"}
 .offer summary:focus-visible{outline:2px solid var(--fg);outline-offset:4px}
 .offer > div{padding:0 0 22px}
+
+.hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px}

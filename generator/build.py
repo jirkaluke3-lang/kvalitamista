@@ -70,6 +70,13 @@ DEFAULTS = {
     "form_zprava": "Zpráva",
     "form_email": "E-mail",
     "form_telefon": "Telefon",
+    "form_obec": "Obec / organizace",
+    "form_zprava_napoveda": "Co ve vaší obci řešíte? Stačí pár vět.",
+    "vice_k_tematu": "Více k tématu",
+    "situace_clanek": "verejny-prostor-zacina-zadanim",
+    "bydleni_clanek": "dobre-bydleni-zacina-u-mista",
+    "budovy_clanek": "",
+    "uvod_odkaz": "Spolupráce",
     "form_povinne": "povinné",
     "form_odeslat": "Odeslat zprávu —",
     "form_souhlas": "Údaje z formuláře použijeme jen k odpovědi na vaši zprávu.",
@@ -656,7 +663,7 @@ FORM_JS = """<script>
     var url=f.getAttribute('data-endpoint');
     var data=new FormData(f);
     if(!url){
-      var body=(data.get('zprava')||'')+'\\n\\n'+(data.get('jmeno')||'')+'\\n'+(data.get('email')||'')+'\\n'+(data.get('telefon')||'');
+      var body=(data.get('zprava')||'')+'\\n\\n'+(data.get('jmeno')||'')+'\\n'+(data.get('obec')||'')+'\\n'+(data.get('email')||'')+'\\n'+(data.get('telefon')||'');
       location.href='mailto:'+f.getAttribute('data-mail')+'?subject='+encodeURIComponent(f.getAttribute('data-subject'))+'&body='+encodeURIComponent(body);
       return;
     }
@@ -713,7 +720,8 @@ def contact_form(lang, mail):
 <summary class="btn">{e(T("tlacitko", lang))}</summary>
 <form data-endpoint="{e(endpoint)}" data-mail="{e(mail)}" data-subject="{e(T('form_predmet', lang))}" novalidate>
 <label>{e(T("form_jmeno", lang))}<input name="jmeno" autocomplete="name"></label>
-<label><span>{e(T("form_zprava", lang))}{req}</span><textarea name="zprava" rows="5" required></textarea></label>
+<label>{e(T("form_obec", lang))}<input name="obec" autocomplete="organization"></label>
+<label><span>{e(T("form_zprava", lang))}{req}</span><textarea name="zprava" rows="5" placeholder="{e(T("form_zprava_napoveda", lang))}" required></textarea></label>
 <label><span>{e(T("form_email", lang))}{req}</span><input name="email" type="email" autocomplete="email" required></label>
 <label>{e(T("form_telefon", lang))}<input name="telefon" type="tel" autocomplete="tel"></label>
 <label class="hp" aria-hidden="true">Web<input name="web" tabindex="-1" autocomplete="off"></label>
@@ -727,6 +735,16 @@ def contact_form(lang, mail):
 
 
 # ---------------------------------------------------------------- úvodní stránka
+def topic_link(section, lang):
+    """Tichý odkaz „Více k tématu“ na článek podle slugu v textu <sekce>_clanek."""
+    slug = T(f"{section}_clanek", "cs")
+    a = next((x for x in ARTICLES if x.get("slug") == slug), None) if slug else None
+    if not a:
+        return ""
+    return (f'<p style="margin:24px 0 0"><span class="muted">{e(T("vice_k_tematu", lang))}:</span> '
+            f'<a class="link" href="{url(lang, "clanky/" + slug + "/")}">{e(F(a, "nazev", lang))}</a></p>')
+
+
 def dash_list(name, lang):
     rows = sorted([r for r in LISTS if r.get("seznam") == name], key=lambda r: num(r.get("poradi")))
     if not rows:
@@ -815,6 +833,7 @@ def home(lang):
 {f'<p class="b" style="margin:28px 0 0">{e(h_text2)}</p>' if h_text2 else ''}
 {dash_list("bydleni_posoudime", lang)}
 {f'<p class="measure" style="margin:24px 0 0">{e(h_end)}</p>' if h_end else ''}
+{topic_link("bydleni", lang)}
 </div>
 </div>
 </section>"""
@@ -830,7 +849,7 @@ def home(lang):
 <div class="hero-sub">
 <p class="b p0">{e(T("uvod_stitek", lang))}</p>
 <p class="M" style="margin:12px 0 0;max-width:36ch">{e(T("uvod_text", lang))}</p>
-<p style="margin:32px 0 0"><a class="btn" href="#formular" data-open-form>{e(T("tlacitko", lang))}</a></p>
+<p class="hero-cta" style="margin:32px 0 0"><a class="btn" href="#formular" data-open-form>{e(T("tlacitko", lang))}</a>{f'<a class="link" href="{url(lang, "nabidka/")}">{e(T("uvod_odkaz", lang))} →</a>' if OFFER else ''}</p>
 </div>
 </section>
 
@@ -844,6 +863,7 @@ def home(lang):
 <p class="M p0" style="max-width:34ch">{e(T("situace_text", lang))}</p>
 <p class="b" style="margin:28px 0 0">{e(T("situace_uvod_seznamu", lang))}</p>
 {dash_list("situace", lang)}
+{topic_link("situace", lang)}
 </div>
 </div>
 </section>
@@ -857,6 +877,7 @@ def home(lang):
 <p class="b" style="margin:28px 0 0">{e(T("budovy_text_2", lang))}</p>
 {dash_list("budovy", lang)}
 {f'<p class="measure" style="margin:24px 0 0">{e(T("budovy_zaver", lang))}</p>' if T("budovy_zaver", lang) else ''}
+{topic_link("budovy", lang)}
 </div>
 </div>
 </section>
