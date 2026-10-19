@@ -45,7 +45,7 @@ DEFAULTS = {
     "clanky_autor": "Autor",
     "autor_text": "Jiří Lukeš je architekt a urbanista, autorizovaný architekt ČKA. Pomáhá obcím s analýzou místa, přípravou zadání a výběrem projektanta. Pokud ve své obci řešíte podobnou otázku, rád ji s vámi proberu.",
     "spoluprace_nadpis": "Formy spolupráce",
-    "menu_nabidka": "Nabídka",
+    "menu_nabidka": "Spolupráce",
     "nabidka_stitek": "Nabídka spolupráce",
     "nabidka_nadpis": "S čím obcím pomáháme",
     "nabidka_uvod": "Spolupráci domlouváme podle konkrétního úkolu. Začít lze kterýmkoli krokem, rozsah a cenu domluvíme předem.",
@@ -580,11 +580,12 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
         f'<a href="{url(l, path)}" lang="{l}"{cur if l == lang else ""}>{LANG_LABEL[l]}</a>'
         for l in LANGS)
     items = [("menu_postup", url(lang) + "#postup"), ("menu_praxe", url(lang) + "#praxe")]
-    if OFFER:
-        items.append(("menu_nabidka", url(lang, "nabidka/")))
     if ARTICLES:
         items.append(("menu_clanky", url(lang, "clanky/")))
-    items += [("menu_onas", url(lang) + "#o-nas"), ("menu_kontakt", url(lang) + "#kontakt")]
+    items.append(("menu_onas", url(lang) + "#o-nas"))
+    if OFFER:
+        items.append(("menu_nabidka", url(lang, "nabidka/")))
+    items.append(("menu_kontakt", url(lang) + "#kontakt"))
     menu = "".join(f'<li><a href="{h}">{e(T(k, lang))}</a></li>' for k, h in items)
     accent = CFG.get("barva_akcentu", "") or "#ECE48A"
     links = ""
