@@ -17,7 +17,15 @@ jobs:
                   i=p["imageinfo"][0];m=i.get("extmetadata",{})
                   g=lambda k:re.sub("<[^>]+>","",m.get(k,{}).get("value","")).strip()[:90]
                   print(p["title"],"|",i["width"],"x",i["height"],"|",g("Artist"),"|",g("LicenseShortName"),"|",g("ImageDescription"),"|",i["url"])
-          for c in ["Category:Unité d'habitation of Marseille","Category:Unité d'habitation of Rezé","Category:Maison radieuse (Rezé)","Category:Corbusierhaus (Berlin)","Category:Unité d'habitation"]:
+          def get(params):
+              u="https://commons.wikimedia.org/w/api.php?"+urllib.parse.urlencode(dict(params,format="json"))
+              return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={"User-Agent":"KvalitaMista/1.0 (jirka.luke3@gmail.com)"})))
+          for t in ["Unité d'habitation","Le Corbusier"]:
+              d=get({"action":"query","list":"categorymembers","cmtitle":"Category:"+t,"cmtype":"subcat","cmlimit":"100"})
+              print("SUBCATS",t,[c["title"] for c in d["query"]["categorymembers"]])
+          d=get({"action":"query","list":"search","srsearch":"Unité d'habitation","srnamespace":"14","srlimit":"30"})
+          print("CATSEARCH",[c["title"] for c in d["query"]["search"]])
+          for c in [x["title"] for x in d["query"]["search"]][:12]:
               try: q(c)
               except Exception as e: print("ERR",c,e)
           PY
