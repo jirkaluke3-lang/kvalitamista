@@ -171,3 +171,12 @@ img{display:block;max-width:100%;height:auto}
 .form button{border:0;cursor:pointer;font:inherit;font-weight:600}
 .form button:disabled{opacity:.6}
 .form-msg{margin:0;max-width:40ch}
+
+/* formy spolupráce a podpis autora */
+.coop-h{margin:clamp(48px,6vw,72px) 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.coop{margin:20px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:28px}
+.coop li{border-top:1px solid var(--fg);padding-top:14px}
+.coop h3{margin:0;font-size:1rem;font-weight:600}
+.coop p{margin:8px 0 0}
+.author-box{margin:clamp(48px,6vw,72px) 0 0;padding-top:18px;border-top:2px solid var(--fg);max-width:62ch}
+.author-box a{font-weight:600}

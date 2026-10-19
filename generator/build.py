@@ -43,6 +43,14 @@ DEFAULTS = {
     "clanky_nadpis": "Články a inspirace",
     "clanky_zpet": "Všechny články",
     "clanky_autor": "Autor",
+    "autor_text": "Jiří Lukeš je architekt a urbanista, autorizovaný architekt ČKA. Pomáhá obcím s analýzou místa, přípravou zadání a výběrem projektanta. Pokud ve své obci řešíte podobnou otázku, rád ji s vámi proberu.",
+    "spoluprace_nadpis": "Formy spolupráce",
+    "spoluprace_1_nadpis": "Jednotlivý úkol",
+    "spoluprace_1_text": "Analýza místa, zadání, doporučení způsobu výběru projektanta nebo posouzení záměru. Rozsah a cenu domluvíme předem.",
+    "spoluprace_2_nadpis": "Dlouhodobá podpora",
+    "spoluprace_2_text": "Obcím bez městského architekta pomáháme podle potřeby. Městským architektům posílíme kapacitu u větších úloh.",
+    "spoluprace_3_nadpis": "Jasná role",
+    "spoluprace_3_text": "Na začátku určíme, zda působíme jako nezávislý poradce, nebo jako projektant. V téže věci obě role nespojujeme.",
     "foto_autor": "Foto",
     "jazyk": "Jazyk",
     "hlavni_menu": "Hlavní menu",
@@ -774,6 +782,11 @@ def home(lang):
 """
 
     spec = T("postup_specialiste", lang)
+    coop_items = "".join(
+        f'<li><h3>{e(T(f"spoluprace_{i}_nadpis", lang))}</h3><p>{e(T(f"spoluprace_{i}_text", lang))}</p></li>'
+        for i in (1, 2, 3, 4) if T(f"spoluprace_{i}_nadpis", lang))
+    coop_html = (f'<h3 class="coop-h">{e(T("spoluprace_nadpis", lang))}</h3><ul class="coop">{coop_items}</ul>'
+                 if coop_items and T("spoluprace_nadpis", lang) else "")
 
     # Sekce „Místo a bydlení“ – zobrazí se jen tehdy, když má v tabulce vyplněný nadpis
     housing_html = ""
@@ -847,6 +860,7 @@ def home(lang):
 <ol class="steps">{steps}</ol>
 <p class="M" style="margin:clamp(48px,6vw,72px) 0 0">{e(T("postup_zaver", lang))}</p>
 {f'<p class="measure" style="margin:16px 0 0">{e(spec)}</p>' if spec else ''}
+{coop_html}
 </div>
 </section>
 
@@ -989,6 +1003,22 @@ def article_text(a, lang):
     return "\n\n".join(out)
 
 
+def author_box(lang):
+    """Krátký podpis autora pod článkem s kontaktem – bez tlačítka a banneru."""
+    text = T("autor_text", lang)
+    if not text:
+        return ""
+    phone = CFG.get("telefon", "")
+    mail = CFG.get("email", "")
+    tel = re.sub(r"[^\d+]", "", phone)
+    links = " · ".join(x for x in (
+        f'<a href="tel:{tel}">{e(phone)}</a>' if phone else "",
+        f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "") if x)
+    return (f'<aside class="author-box"><p class="b p0">{e(T("clanky_autor", lang))}</p>'
+            f'<p class="measure" style="margin:8px 0 0">{e(text)}</p>'
+            + (f'<p style="margin:8px 0 0">{links}</p>' if links else "") + '</aside>')
+
+
 def article_page(a, lang):
     name = F(a, "nazev", lang)
     ph = photos("clanky", a["slug"])
@@ -1011,6 +1041,7 @@ def article_page(a, lang):
 {lead}
 <div class="prose" style="margin-top:clamp(32px,4vw,56px)">{text_html}</div>
 {rest}
+{author_box(lang)}
 <p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
 </article>
 """
