@@ -108,7 +108,7 @@ def doc_to_text(md):
     Tabulka o 1 sloupci a 2 řádcích: 1. řádek název fotky (01.jpg), 2. řádek popis a autor.
     Odkaz na obrázek ve 2. řádku (např. Wikimedia Commons) se použije, když fotka ve složce chybí."""
     def unesc(t):
-        return re.sub(r"\\([\\`*_{}\[\]()#+\-.!|>~])", r"\1", t)
+        return re.sub(r"\\([\\`*_{}\[\]()#+\-.!|>~&])", r"\1", t)
     lines = [re.sub(r"^(>\s?)+", "", x).rstrip() for x in md.replace("\r", "").split("\n")]
     out, i, prev = [], 0, None
     def emit(text, kind):
