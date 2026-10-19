@@ -17,12 +17,12 @@ jobs:
                   i=p["imageinfo"][0];m=i.get("extmetadata",{})
                   g=lambda k:re.sub("<[^>]+>","",m.get(k,{}).get("value","")).strip().replace("\n"," ")[:90]
                   print(p["title"],"|",i["width"],"x",i["height"],"|",g("Artist"),"|",g("LicenseShortName"),"|",g("ImageDescription"),"|",i["url"].split("?")[0])
-          II={"prop":"imageinfo","iiprop":"url|size|extmetadata","iiextmetadatafilter":"Artist|LicenseShortName|ImageDescription"}
+          II={"action":"query","prop":"imageinfo","iiprop":"url|size|extmetadata","iiextmetadatafilter":"Artist|LicenseShortName|ImageDescription"}
           for q in ["Hogeweyk","Hogewey Weesp","Pflegewohnheim Peter Rosegger","Rosegger Pflegeheim Graz","Wissounig","Generationernes Hus","Generationernes Hus Aarhus","Aarhus Ø Generationernes"]:
               print("== SEARCH",q)
               try: show(get(dict(II,generator="search",gsrsearch=q,gsrnamespace="6",gsrlimit="15")))
               except Exception as e: print("ERR",e)
-          for q in ["Hogeweyk","Generationernes Hus","Peter Rosegger"]:
+          for q in ["De Hogeweyk","Hogewey","Generationernes Hus","Aarhus Ø","Reininghaus Graz"]:
               d=get({"action":"query","list":"search","srsearch":q,"srnamespace":"14","srlimit":"10"})
               cats=[c["title"] for c in d["query"]["search"]]; print("CATS",q,cats)
               for c in cats[:3]:
