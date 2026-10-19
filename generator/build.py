@@ -268,6 +268,7 @@ WEB_CACHE = DATA / "cache" / "web"
 LICENSES = {"CC BY-SA 4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
             "CC BY-SA 3.0": "https://creativecommons.org/licenses/by-sa/3.0/",
             "CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
+            "CC BY 3.0": "https://creativecommons.org/licenses/by/3.0/",
             "CC0": "https://creativecommons.org/publicdomain/zero/1.0/"}
 REMOTE = []   # (zdroj, cíl) – vzdálené obrázky ke zkopírování do webu
 ART_PH = {}   # fotky z Disku pro právě sestavovaný článek
