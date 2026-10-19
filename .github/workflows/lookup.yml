@@ -1,0 +1,33 @@
+name: lookup
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  l:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          python3 - <<'PY' > out.txt
+          import json,urllib.request,urllib.parse,re
+          def get(params):
+              u="https://commons.wikimedia.org/w/api.php?"+urllib.parse.urlencode(dict(params,format="json"))
+              return json.load(urllib.request.urlopen(urllib.request.Request(u,headers={"User-Agent":"KvalitaMista/1.0 (jirka.luke3@gmail.com)"})))
+          def show(d):
+              for p in d.get("query",{}).get("pages",{}).values():
+                  i=p["imageinfo"][0];m=i.get("extmetadata",{})
+                  g=lambda k:re.sub("<[^>]+>","",m.get(k,{}).get("value","")).strip().replace("\n"," ")[:90]
+                  print(p["title"],"|",i["width"],"x",i["height"],"|",g("Artist"),"|",g("LicenseShortName"),"|",g("ImageDescription"),"|",i["url"].split("?")[0])
+          II={"prop":"imageinfo","iiprop":"url|size|extmetadata","iiextmetadatafilter":"Artist|LicenseShortName|ImageDescription"}
+          for q in ["Hogeweyk","Hogewey Weesp","Pflegewohnheim Peter Rosegger","Rosegger Pflegeheim Graz","Wissounig","Generationernes Hus","Generationernes Hus Aarhus","Aarhus Ø Generationernes"]:
+              print("== SEARCH",q)
+              try: show(get(dict(II,generator="search",gsrsearch=q,gsrnamespace="6",gsrlimit="15")))
+              except Exception as e: print("ERR",e)
+          for q in ["Hogeweyk","Generationernes Hus","Peter Rosegger"]:
+              d=get({"action":"query","list":"search","srsearch":q,"srnamespace":"14","srlimit":"10"})
+              cats=[c["title"] for c in d["query"]["search"]]; print("CATS",q,cats)
+              for c in cats[:3]:
+                  print("== CAT",c)
+                  try: show(get(dict(II,generator="categorymembers",gcmtitle=c,gcmtype="file",gcmlimit="40")))
+                  except Exception as e: print("ERR",e)
+          PY
+          git init -q r && cd r && mv ../out.txt . && git add out.txt && git -c user.name=bot -c user.email=b@b commit -qm out && git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:refs/heads/tmp-lookup
