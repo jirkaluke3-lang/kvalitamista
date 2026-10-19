@@ -1052,20 +1052,13 @@ def offer_page(lang):
 
 
 def author_box(lang):
-    """Krátký podpis autora pod článkem s kontaktem – bez tlačítka a banneru."""
+    """Krátký podpis autora pod článkem s odkazem na nabídku – bez tlačítka a banneru."""
     text = T("autor_text", lang)
     if not text:
         return ""
-    phone = CFG.get("telefon", "")
-    mail = CFG.get("email", "")
-    tel = re.sub(r"[^\d+]", "", phone)
-    links = " · ".join(x for x in (
-        f'<a href="tel:{tel}">{e(phone)}</a>' if phone else "",
-        f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "",
-        f'<a href="{url(lang, "nabidka/")}">{e(T("nabidka_odkaz", lang))}</a>' if OFFER else "") if x)
+    link = (f' · <a href="{url(lang, "nabidka/")}">{e(T("nabidka_odkaz", lang))}</a>' if OFFER else "")
     return (f'<aside class="author-box"><p class="b p0">{e(T("clanky_autor", lang))}</p>'
-            f'<p class="measure" style="margin:8px 0 0">{e(text)}</p>'
-            + (f'<p style="margin:8px 0 0">{links}</p>' if links else "") + '</aside>')
+            f'<p class="measure" style="margin:8px 0 0">{e(text)}{link}</p></aside>')
 
 
 def article_page(a, lang):
