@@ -142,7 +142,7 @@ def doc_to_text(md):
                         fb = fb or m.group(2)
                         return m.group(1)
                     return m.group(0)
-                cap = re.sub(r"\[([^\]]*)\]\((https?://[^)\s]+)\)", strip_img_link, cap)
+                cap = re.sub(r"\[([^\]]*)\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)", strip_img_link, cap)
                 cap = unesc(cap).replace("|", "/").strip()
                 m = re.search(r"\s*(?:·\s*)?(Foto\s*:.*)$", cap)
                 credit = m.group(1).strip() if m else ""
@@ -289,7 +289,8 @@ def remote_image(src):
     if not local.exists():
         try:
             WEB_CACHE.mkdir(parents=True, exist_ok=True)
-            req = urllib.request.Request(src, headers={"User-Agent": "kvalitamista.cz-build/1.0 (jirka.luke3@gmail.com)"})
+            url = urllib.parse.quote(src, safe=":/?=&%#~+,;@!$'*")
+            req = urllib.request.Request(url, headers={"User-Agent": "kvalitamista.cz-build/1.0 (jirka.luke3@gmail.com)"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 local.write_bytes(r.read())
             print(f"· staženo z webu: {name}")
