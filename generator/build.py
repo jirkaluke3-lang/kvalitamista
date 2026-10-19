@@ -849,7 +849,7 @@ def home(lang):
 <div class="hero-sub">
 <p class="b p0">{e(T("uvod_stitek", lang))}</p>
 <p class="M" style="margin:12px 0 0;max-width:36ch">{e(T("uvod_text", lang))}</p>
-<p class="hero-cta" style="margin:32px 0 0"><a class="btn" href="#formular" data-open-form>{e(T("tlacitko", lang))}</a>{f'<a class="link" href="{url(lang, "nabidka/")}">{e(T("uvod_odkaz", lang))} →</a>' if OFFER else ''}</p>
+<p class="hero-cta" style="margin:32px 0 0">{f'<a class="btn" href="{url(lang, "nabidka/")}">{e(T("uvod_odkaz", lang))} —</a>' if OFFER else f'<a class="btn" href="#formular" data-open-form>{e(T("tlacitko", lang))}</a>'}</p>
 </div>
 </section>
 
