@@ -518,6 +518,19 @@ def protect(body):
     return "".join(p if i % 2 else re.sub(r">([^<>]+)<", text, p) for i, p in enumerate(parts))
 
 
+HEAD_JS = """<script>
+(function(){
+  var h=document.querySelector('.site-head'), r=document.documentElement;
+  function upd(){
+    var y=window.scrollY;   /* hystereze proti cukání na hranici */
+    if(y>80) h.classList.add('scrolled'); else if(y<8) h.classList.remove('scrolled');
+    r.style.setProperty('--hh', h.offsetHeight+'px');
+  }
+  upd(); window.addEventListener('scroll', upd, {passive:true}); window.addEventListener('resize', upd);
+})();
+</script>"""
+
+
 def browser_translation_allowed():
     """NASTAVENI prekladac_prohlizece = ANO povolí automatický překlad v prohlížeči."""
     return yes(CFG.get("prekladac_prohlizece", "NE"))
@@ -574,8 +587,8 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 </head>
 <body>
 <a class="skip" href="#obsah">{e(T("skip", lang))}</a>
+<header class="site-head">
 <div class="strip"></div>
-<header>
 <div class="wrap head">
 <nav class="lang notranslate" translate="no" aria-label="{e(T('jazyk', lang))}">{langnav}</nav>
 <div class="row">
@@ -587,6 +600,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 </div>
 </div>
 </header>
+{HEAD_JS}
 <main id="obsah">
 {body}
 </main>

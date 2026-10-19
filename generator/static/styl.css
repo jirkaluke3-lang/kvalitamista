@@ -27,7 +27,17 @@ img{display:block;max-width:100%;height:auto}
 .strip{height:8px;background:var(--accent)}
 
 /* záhlaví */
-header{position:relative}
+/* hlavička drží polohu; po odrolování se zmenší a dostane jemnou linku */
+.site-head{position:sticky;top:0;z-index:20;background:var(--bg);transition:box-shadow .25s ease}
+.site-head .head{transition:padding .25s ease}
+.site-head .logo,.site-head .menu{transition:font-size .25s ease}
+.site-head .lang{transition:opacity .2s ease,max-height .25s ease;max-height:2em;overflow:hidden}
+.site-head.scrolled{box-shadow:0 1px 0 rgba(0,0,0,.12)}
+.site-head.scrolled .head{padding-top:12px;padding-bottom:12px}
+.site-head.scrolled .logo,.site-head.scrolled .menu{font-size:calc(var(--logo)*.72)}
+.site-head .menu nav{max-height:calc(100vh - var(--hh,120px));overflow-y:auto}
+[id]{scroll-margin-top:calc(var(--hh,120px) + 16px)}
+@media (prefers-reduced-motion:reduce){.site-head,.site-head *{transition:none!important}}
 .head{padding-top:clamp(20px,2.8vw,40px);padding-bottom:clamp(24px,3vw,36px)}
 .lang{display:flex;justify-content:flex-end;gap:14px;font-weight:500;line-height:1}
 .lang a{text-decoration:none;color:var(--soft)}.lang a[aria-current]{color:var(--fg)}
