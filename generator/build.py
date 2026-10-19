@@ -45,6 +45,14 @@ DEFAULTS = {
     "clanky_autor": "Autor",
     "autor_text": "Jiří Lukeš je architekt a urbanista, autorizovaný architekt ČKA. Pomáhá obcím s analýzou místa, přípravou zadání a výběrem projektanta. Pokud ve své obci řešíte podobnou otázku, rád ji s vámi proberu.",
     "spoluprace_nadpis": "Formy spolupráce",
+    "menu_nabidka": "Nabídka",
+    "nabidka_stitek": "Nabídka spolupráce",
+    "nabidka_nadpis": "S čím obcím pomáháme",
+    "nabidka_uvod": "Spolupráci domlouváme podle konkrétního úkolu. Začít lze kterýmkoli krokem, rozsah a cenu domluvíme předem.",
+    "nabidka_vystup": "Výstup",
+    "nabidka_zacit_nadpis": "Jak začít",
+    "nabidka_zacit_text": "Zavolejte nebo napište, co ve vaší obci řešíte. Obvykle začínáme úvodní konzultací na místě.",
+    "nabidka_odkaz": "Nabídka spolupráce",
     "spoluprace_1_nadpis": "Jednotlivý úkol",
     "spoluprace_1_text": "Analýza místa, zadání, doporučení způsobu výběru projektanta nebo posouzení záměru. Rozsah a cenu domluvíme předem.",
     "spoluprace_2_nadpis": "Dlouhodobá podpora",
@@ -102,6 +110,8 @@ def num(v, default=999):
 CFG = {r.get("klic", ""): r.get("hodnota", "") for r in read_csv("nastaveni") if r.get("klic")}
 TEXTS = {r.get("klic", ""): r for r in read_csv("texty") if r.get("klic")}
 LISTS = [r for r in read_csv("seznamy") if yes(r.get("publikovat", "ANO"))]
+OFFER = sorted([r for r in read_csv("nabidka") if yes(r.get("publikovat", "ANO")) and r.get("nazev_cz")],
+               key=lambda r: num(r.get("poradi")))
 STEPS = sorted([r for r in read_csv("kroky") if yes(r.get("publikovat", "ANO"))], key=lambda r: num(r.get("poradi")))
 PROJECTS = sorted([r for r in read_csv("projekty") if yes(r.get("publikovat")) and r.get("slug")], key=lambda r: num(r.get("poradi")))
 ARTICLES = sorted([r for r in read_csv("clanky") if yes(r.get("publikovat")) and r.get("slug")],
@@ -570,6 +580,8 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
         f'<a href="{url(l, path)}" lang="{l}"{cur if l == lang else ""}>{LANG_LABEL[l]}</a>'
         for l in LANGS)
     items = [("menu_postup", url(lang) + "#postup"), ("menu_praxe", url(lang) + "#praxe")]
+    if OFFER:
+        items.append(("menu_nabidka", url(lang, "nabidka/")))
     if ARTICLES:
         items.append(("menu_clanky", url(lang, "clanky/")))
     items += [("menu_onas", url(lang) + "#o-nas"), ("menu_kontakt", url(lang) + "#kontakt")]
@@ -782,11 +794,8 @@ def home(lang):
 """
 
     spec = T("postup_specialiste", lang)
-    coop_items = "".join(
-        f'<li><h3>{e(T(f"spoluprace_{i}_nadpis", lang))}</h3><p>{e(T(f"spoluprace_{i}_text", lang))}</p></li>'
-        for i in (1, 2, 3, 4) if T(f"spoluprace_{i}_nadpis", lang))
-    coop_html = (f'<h3 class="coop-h">{e(T("spoluprace_nadpis", lang))}</h3><ul class="coop">{coop_items}</ul>'
-                 if coop_items and T("spoluprace_nadpis", lang) else "")
+    offer_link = (f'<p style="margin:24px 0 0"><a class="link" href="{url(lang, 'nabidka/')}">{e(T("nabidka_odkaz", lang))} →</a></p>'
+                  if OFFER else "")
 
     # Sekce „Místo a bydlení“ – zobrazí se jen tehdy, když má v tabulce vyplněný nadpis
     housing_html = ""
@@ -860,7 +869,7 @@ def home(lang):
 <ol class="steps">{steps}</ol>
 <p class="M" style="margin:clamp(48px,6vw,72px) 0 0">{e(T("postup_zaver", lang))}</p>
 {f'<p class="measure" style="margin:16px 0 0">{e(spec)}</p>' if spec else ''}
-{coop_html}
+{offer_link}
 </div>
 </section>
 
@@ -1003,6 +1012,45 @@ def article_text(a, lang):
     return "\n\n".join(out)
 
 
+def coop_block(lang):
+    items = "".join(
+        f'<li><h3>{e(T(f"spoluprace_{i}_nadpis", lang))}</h3><p>{e(T(f"spoluprace_{i}_text", lang))}</p></li>'
+        for i in (1, 2, 3, 4) if T(f"spoluprace_{i}_nadpis", lang))
+    if not items or not T("spoluprace_nadpis", lang):
+        return ""
+    return f'<h2 class="coop-h">{e(T("spoluprace_nadpis", lang))}</h2><ul class="coop">{items}</ul>'
+
+
+def offer_page(lang):
+    phone = CFG.get("telefon", "")
+    mail = CFG.get("email", "")
+    tel = re.sub(r"[^\d+]", "", phone)
+    acc = ""
+    for r in OFFER:
+        out = F(r, "vystup", lang)
+        acc += (f'<details class="offer"><summary>{e(F(r, "nazev", lang))}</summary>'
+                f'<div><p class="measure p0">{e(F(r, "popis", lang))}</p>'
+                + (f'<p class="measure" style="margin:12px 0 0"><span class="b">{e(T("nabidka_vystup", lang))}:</span> {e(out)}</p>' if out else "")
+                + '</div></details>')
+    contact = " · ".join(x for x in (
+        f'<a href="tel:{tel}">{e(phone)}</a>' if phone else "",
+        f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "") if x)
+    body = f"""
+<section class="wrap detail-head sec">
+<p class="label">{e(T("nabidka_stitek", lang))}</p>
+<h1 class="L" style="margin-top:40px;max-width:20ch">{e(T("nabidka_nadpis", lang))}</h1>
+<p class="M measure" style="margin:28px 0 0">{e(T("nabidka_uvod", lang))}</p>
+<div class="offers">{acc}</div>
+{coop_block(lang)}
+<h2 class="coop-h">{e(T("nabidka_zacit_nadpis", lang))}</h2>
+<p class="measure" style="margin:12px 0 0">{e(T("nabidka_zacit_text", lang))}</p>
+{f'<p style="margin:12px 0 0">{contact}</p>' if contact else ''}
+<p style="margin:28px 0 0"><a class="btn" href="{url(lang)}#formular">{e(T("tlacitko", lang))}</a></p>
+</section>
+"""
+    return page(lang, "nabidka/", f"{T('nabidka_stitek', lang)} — KvalitaMísta", T("nabidka_uvod", lang), body)
+
+
 def author_box(lang):
     """Krátký podpis autora pod článkem s kontaktem – bez tlačítka a banneru."""
     text = T("autor_text", lang)
@@ -1013,7 +1061,8 @@ def author_box(lang):
     tel = re.sub(r"[^\d+]", "", phone)
     links = " · ".join(x for x in (
         f'<a href="tel:{tel}">{e(phone)}</a>' if phone else "",
-        f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "") if x)
+        f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "",
+        f'<a href="{url(lang, "nabidka/")}">{e(T("nabidka_odkaz", lang))}</a>' if OFFER else "") if x)
     return (f'<aside class="author-box"><p class="b p0">{e(T("clanky_autor", lang))}</p>'
             f'<p class="measure" style="margin:8px 0 0">{e(text)}</p>'
             + (f'<p style="margin:8px 0 0">{links}</p>' if links else "") + '</aside>')
@@ -1139,6 +1188,8 @@ def main():
         for p in PROJECTS:
             write(prefix(lang) + f"projekty/{p['slug']}/index.html", project_page(p, lang))
             pages.append(url(lang, f"projekty/{p['slug']}/"))
+        if OFFER:
+            write(prefix(lang) + "nabidka/index.html", offer_page(lang)); pages.append(url(lang, "nabidka/"))
         if ARTICLES:
             write(prefix(lang) + "clanky/index.html", articles_index(lang)); pages.append(url(lang, "clanky/"))
             for a in ARTICLES:

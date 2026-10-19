@@ -180,3 +180,13 @@ img{display:block;max-width:100%;height:auto}
 .coop p{margin:8px 0 0}
 .author-box{margin:clamp(48px,6vw,72px) 0 0;padding-top:18px;border-top:2px solid var(--fg);max-width:62ch}
 .author-box a{font-weight:600}
+
+/* nabídka – rozbalovací položky */
+.offers{margin:clamp(40px,5vw,64px) 0 0;border-top:2px solid var(--fg);max-width:820px}
+.offer{border-bottom:1px solid var(--fg)}
+.offer summary{cursor:pointer;list-style:none;padding:18px 40px 18px 0;position:relative;font-size:var(--M);line-height:1.25;font-weight:600}
+.offer summary::-webkit-details-marker{display:none}
+.offer summary::after{content:"+";position:absolute;right:4px;top:14px;font-weight:400;font-size:1.5em;line-height:1}
+.offer[open] summary::after{content:"–"}
+.offer summary:focus-visible{outline:2px solid var(--fg);outline-offset:4px}
+.offer > div{padding:0 0 22px}

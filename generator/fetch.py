@@ -35,7 +35,8 @@ API_KEY = os.environ.get("GDRIVE_API_KEY", "").strip()
 
 # list v tabulce -> soubor CSV
 SHEETS = {"NASTAVENI": "nastaveni", "TEXTY": "texty", "SEZNAMY": "seznamy",
-          "KROKY": "kroky", "PROJEKTY": "projekty", "CLANKY": "clanky"}
+          "KROKY": "kroky", "PROJEKTY": "projekty", "CLANKY": "clanky",
+          "NABIDKA": "nabidka"}
 SECTION_WITH_SLUGS = ["projekty", "clanky"]   # podsložky podle slugu
 SECTION_FLAT = ["nastaveni"]                   # obrázky přímo ve složce
 
