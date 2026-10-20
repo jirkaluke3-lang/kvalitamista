@@ -157,7 +157,8 @@ def doc_to_text(md):
                 if not re.match(r"^\|[\s:\-|]+\|$", r):
                     rows.append([c.strip() for c in re.split(r"(?<!\\)\|", r.strip().strip("|"))])
                 i += 1
-            names = [unesc(re.sub(r"\*+", "", c)).strip() for c in (rows[0] if rows else [])]
+            rows = [r for r in rows if any(c.strip() for c in r)]   # prázdné záhlaví z Google dokumentu
+            names = [re.sub(r"\*+", "", unesc(c)).strip() for c in (rows[0] if rows else [])]
             cols = [j for j, n in enumerate(names) if IMG_NAME.match(n)]
             if cols:
                 # tabulka s 1–3 sloupci: 1. řádek názvy fotek, 2. řádek popisek a autor
