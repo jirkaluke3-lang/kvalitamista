@@ -130,7 +130,8 @@ IMG_NAME = re.compile(r"^[\w.\- ]+\.(jpe?g|png|webp|avif|gif)$", re.I)
 
 def doc_to_text(md):
     """Google dokument (export do Markdownu) -> značky článku.
-    Tabulka o 1 sloupci a 2 řádcích: 1. řádek název fotky (01.jpg), 2. řádek popis a autor.
+    Tabulka o 1–3 sloupcích a 2 řádcích: 1. řádek názvy fotek (01.jpg), 2. řádek popis a autor
+    pod každou fotkou. Více sloupců = obrázky vedle sebe.
     Odkaz na obrázek ve 2. řádku (např. Wikimedia Commons) se použije, když fotka ve složce chybí."""
     def unesc(t):
         t = re.sub(r"\\+&", "&", t)
@@ -154,30 +155,33 @@ def doc_to_text(md):
             while i < len(lines) and lines[i].strip().startswith("|"):
                 r = lines[i].strip()
                 if not re.match(r"^\|[\s:\-|]+\|$", r):
-                    cells = [c.strip() for c in re.split(r"(?<!\\)\|", r.strip("|"))]
-                    rows.append(" ".join(c for c in cells if c))
+                    rows.append([c.strip() for c in re.split(r"(?<!\\)\|", r.strip().strip("|"))])
                 i += 1
-            name = unesc(re.sub(r"\*+", "", rows[0])).strip() if rows else ""
-            if IMG_NAME.match(name):
-                cap = rows[1] if len(rows) > 1 else ""
-                fb = ""
-                def strip_img_link(m):
-                    nonlocal fb
-                    if re.search(r"\.(jpe?g|png|webp|gif)(\?.*)?$", m.group(2), re.I) or "upload.wikimedia.org" in m.group(2):
-                        fb = fb or m.group(2)
-                        return m.group(1)
-                    return m.group(0)
-                cap = re.sub(r"\[([^\]]*)\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)", strip_img_link, cap)
-                cap = unesc(cap).replace("|", "/").strip()
-                m = re.search(r"\s*(?:·\s*)?(Foto\s*:.*)$", cap)
-                credit = m.group(1).strip() if m else ""
-                cap = cap[:m.start()].strip(" ·") if m else cap
-                src = name + (f"::{fb}" if fb else "")
-                # obrázky hned za sebou (jen prázdné řádky mezi) = vedle sebe
-                emit(f"![{cap} | {credit}]({src.replace(' ', '%20')})", "fig" if prev == "fig" else "fig_new")
+            names = [unesc(re.sub(r"\*+", "", c)).strip() for c in (rows[0] if rows else [])]
+            cols = [j for j, n in enumerate(names) if IMG_NAME.match(n)]
+            if cols:
+                # tabulka s 1–3 sloupci: 1. řádek názvy fotek, 2. řádek popisek a autor
+                # → obrázky vedle sebe; samostatné tabulky hned za sebou také vedle sebe
+                for k, j in enumerate(cols):
+                    cap = rows[1][j] if len(rows) > 1 and j < len(rows[1]) else ""
+                    fb = ""
+                    def strip_img_link(m):
+                        nonlocal fb
+                        if re.search(r"\.(jpe?g|png|webp|gif)(\?.*)?$", m.group(2), re.I) or "upload.wikimedia.org" in m.group(2):
+                            fb = fb or m.group(2)
+                            return m.group(1)
+                        return m.group(0)
+                    cap = re.sub(r"\[([^\]]*)\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)", strip_img_link, cap)
+                    cap = unesc(cap).replace("|", "/").strip()
+                    m = re.search(r"\s*(?:·\s*)?(Foto\s*:.*)$", cap)
+                    credit = m.group(1).strip() if m else ""
+                    cap = cap[:m.start()].strip(" ·") if m else cap
+                    src = names[j] + (f"::{fb}" if fb else "")
+                    kind = "fig" if (k > 0 or prev == "fig") else "fig_new"
+                    emit(f"![{cap} | {credit}]({src.replace(' ', '%20')})", kind)
             else:
                 for r in rows:
-                    emit(unesc(r), "p")
+                    emit(unesc(" ".join(c for c in r if c)), "p")
             continue
         if re.match(r"^!\[[^\]]*\]\(", x):   # vložený obrázek v dokumentu – ignorovat
             i += 1; continue
@@ -380,12 +384,24 @@ def figure_block(lines):
                 print(f"· obrázek „{name}“ zatím není ve složce článku na Disku — místo zůstane prázdné")
                 continue
         w, h = img_size(local)
-        items.append((href, w / h, parts[0]))
+        items.append((href, w / h, parts[0], parts[1] if len(parts) > 1 else "", src))
     if not items:
         return ""
+    own = [(c, cr) for _, _, c, cr, _ in items]
+    separate = len(items) > 1 and len({x for x in own if any(x)}) > 1
+
+    def cap_html(c, cr, s):
+        if not (c or cr):
+            return ""
+        return (f"<figcaption>{inline(c)}"
+                f'{f"<span class=fig-cr>{credit_html(cr, s)}</span>" if cr else ""}</figcaption>')
+    if separate:
+        imgs = "".join(f'<figure class="fig-i" style="flex:{r:.3f} 1 0"><img src="{href}" alt="{e(alt)}" loading="lazy">'
+                       f'{cap_html(alt, cr, s)}</figure>' for href, r, alt, cr, s in items)
+        return f'<div class="fig fig-row fig-sep"><div class="fig-imgs">{imgs}</div></div>'
     imgs = "".join(f'<div class="fig-i" style="flex:{r:.3f} 1 0"><img src="{href}" alt="{e(alt)}" loading="lazy"></div>'
-                   for href, r, alt in items)
-    cls = "fig fig-row" if len(items) > 1 else ("fig fig-tall" if items[0][1] < 1 else "fig")
+                   for href, r, alt, _, _ in items)
+    cls = "fig fig-row" if len(items) > 1 else "fig"
     capt = ""
     if cap or credit:
         capt = (f"<figcaption>{inline(cap)}"
