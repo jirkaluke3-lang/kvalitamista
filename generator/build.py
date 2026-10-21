@@ -162,7 +162,7 @@ def doc_to_text(md):
             cols = [j for j, n in enumerate(names) if IMG_NAME.match(n)]
             if cols:
                 # tabulka s 1–3 sloupci: 1. řádek názvy fotek, 2. řádek popisek a autor
-                # → obrázky vedle sebe; samostatné tabulky hned za sebou také vedle sebe
+                # → každá tabulka = jedna řada obrázků (1–3 vedle sebe)
                 for k, j in enumerate(cols):
                     cap = rows[1][j] if len(rows) > 1 and j < len(rows[1]) else ""
                     fb = ""
@@ -175,10 +175,15 @@ def doc_to_text(md):
                     cap = re.sub(r"\[([^\]]*)\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)", strip_img_link, cap)
                     cap = unesc(cap).replace("|", "/").strip()
                     m = re.search(r"\s*(?:·\s*)?(Foto\s*:.*)$", cap)
-                    credit = m.group(1).strip() if m else ""
-                    cap = cap[:m.start()].strip(" ·") if m else cap
+                    if m:
+                        credit, cap = m.group(1).strip(), cap[:m.start()].strip(" ·")
+                    elif cap:
+                        # 2. řádek bez „Foto:“ = jméno fotografa
+                        credit, cap = f"Foto: {cap}", ""
+                    else:
+                        credit = ""
                     src = names[j] + (f"::{fb}" if fb else "")
-                    kind = "fig" if (k > 0 or prev == "fig") else "fig_new"
+                    kind = "fig" if k > 0 else "fig_new"
                     emit(f"![{cap} | {credit}]({src.replace(' ', '%20')})", kind)
             else:
                 for r in rows:
@@ -1112,7 +1117,7 @@ def article_page(a, lang):
             if ph and ph[0] not in used else "")
     rest = "".join(f'<figure style="margin:24px 0 0"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
                    f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
-                   for f in ph[1:] if f not in used)
+                   for f in ph[1:] if f not in used) if not used else ""   # s obrázky v textu bez galerie
     desc = a.get("seo_popis_cz", "") if lang == "cs" else tr(a.get("seo_popis_cz", "") or a.get("perex_cz", ""), "", lang)
     body = f"""
 <article class="wrap detail-head sec">
