@@ -189,6 +189,8 @@ def doc_to_text(md):
                 for r in rows:
                     emit(unesc(" ".join(c for c in r if c)), "p")
             continue
+        if re.fullmatch(r"#{1,6}", x):   # prázdný nadpis v dokumentu – ignorovat
+            i += 1; continue
         if re.match(r"^!\[[^\]]*\]\(", x):   # vložený obrázek v dokumentu – ignorovat
             i += 1; continue
         m = re.match(r"^#{1,6}\s+(.*)$", x)
