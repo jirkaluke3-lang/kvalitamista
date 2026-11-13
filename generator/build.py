@@ -1115,7 +1115,9 @@ def article_page(a, lang):
     ART_PH["list"] = ph
     text_html = rich(article_text(a, lang))
     used = ART_PH.get("used", set())
-    lead = (f'<figure style="margin:clamp(32px,4vw,56px) 0 0"><img src="{img_url(ph[0])}" alt="{e(caps.get(ph[0].stem, name))}"></figure>'
+    lead_cap = (caps.get(ph[0].stem) or name_caption(ph[0])) if ph else ""
+    lead = (f'<figure style="margin:clamp(32px,4vw,56px) 0 0"><img src="{img_url(ph[0])}" alt="{e(lead_cap or name)}">'
+            f'{f"<figcaption class=muted>{e(lead_cap)}</figcaption>" if lead_cap else ""}</figure>'
             if ph and ph[0] not in used else "")
     rest = "".join(f'<figure style="margin:24px 0 0"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
                    f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
