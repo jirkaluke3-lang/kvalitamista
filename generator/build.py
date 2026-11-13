@@ -32,8 +32,6 @@ PHOTO_EXT = (".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif")
 
 # Texty, které v tabulce nemusí být (výchozí česká podoba; přeloží se automaticky)
 DEFAULTS = {
-    "avatar_jmeno": "Sandra Heling",
-    "avatar_popis": "specialistka virtuální komunikace · AI",
     "menu_clanky": "Články",
     "menu_label": "Menu",
     "skip": "Přeskočit na obsah",
@@ -817,7 +815,6 @@ def home(lang):
                      f'<noscript><img src="{img_url(hphotos[0])}" alt="{alt}" style="object-position:{pos}"></noscript>'
                      f'{nav}<figcaption>{e(cap0)}</figcaption></figure>{SLIDES_JS}')
     portrait = cfg_photo("portret")
-    avatar = cfg_photo("avatar") or next(iter(sorted((IMG / "nastaveni").glob("avatar.*"))), None)
 
     steps = "".join(
         f'<li><span class="num">{i:02d}</span>'
@@ -934,7 +931,6 @@ def home(lang):
 <blockquote class="L" style="margin:40px 0 0;max-width:18ch">{e(T("onas_citat", lang))}</blockquote>
 <div class="about">
 {f'<div class="portrait"><img src="{img_url(portrait)}" alt="{e(T("onas_jmeno", lang))}" loading="lazy"></div>' if portrait else ''}
-{f'<figure class="avatar"><div class="portrait"><img src="{img_url(avatar)}" alt="{e(T("avatar_jmeno", lang))} – {e(T("avatar_popis", lang))}" loading="lazy"></div><figcaption><b>{e(T("avatar_jmeno", lang))}</b><br>{e(T("avatar_popis", lang))}</figcaption></figure>' if avatar else ''}
 <div style="flex:1 1 380px;min-width:0;align-self:flex-end">
 <h3 class="M b p0" style="line-height:1.2">{e(T("onas_jmeno", lang))}</h3>
 <p class="measure" style="margin:14px 0 0">{e(T("onas_text", lang))}</p>
