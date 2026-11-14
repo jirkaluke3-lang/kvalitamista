@@ -1167,7 +1167,7 @@ def article_page(a, lang):
     extra = (f'<meta property="article:published_time" content="{e(a.get("datum", "")[:10])}">\n' if a.get("datum") else "")
     body = f"""
 <article class="wrap detail-head sec">
-<header class="sh"><div class="sh-row" style="margin-top:0"><p class="art-meta">{e(T("clanky_stitek", lang))}</p><p class="art-meta">{e(article_meta(a, lang))}</p></div></header>
+<header class="art-head"><p class="b">{e(T("clanky_stitek", lang))}</p>{"".join(f'<p class="muted">{e(x)}</p>' for x in article_meta(a, lang).split(" · ") if x)}</header>
 <h1 class="L" style="margin-top:var(--after);max-width:20ch">{e(name)}</h1>
 <p class="M measure" style="margin:28px 0 0">{e(F(a, "perex", lang))}</p>
 {lead}

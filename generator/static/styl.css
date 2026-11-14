@@ -206,6 +206,9 @@ img{display:block;max-width:100%;height:auto}
 .sh-t{margin:0;font-size:var(--H);line-height:1.05;font-weight:600;letter-spacing:-.025em}
 .sh-next{margin-top:var(--after)}
 .art-meta{margin:0;font-size:var(--XS);color:var(--muted);font-variant-numeric:tabular-nums}
+/* hlavička článku: rubrika, datum a autor pod sebou, linka nahoře přes šířku sloupce textu */
+.art-head{max-width:62ch;border-top:2px solid var(--fg);padding-top:16px}
+.art-head p{margin:0;font-variant-numeric:tabular-nums}
 .related{margin-top:clamp(56px,7vw,96px)}
 .related .sh-t{font-size:var(--M)}
 .related .texts{margin-top:32px}
