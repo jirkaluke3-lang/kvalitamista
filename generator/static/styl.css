@@ -205,6 +205,10 @@ img{display:block;max-width:100%;height:auto}
 .sh-row{margin-top:6px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 32px}
 .sh-t{margin:0;font-size:var(--H);line-height:1.05;font-weight:600;letter-spacing:-.025em}
 .sh-next{margin-top:var(--after)}
+.art-meta{margin:0;font-size:var(--XS);color:var(--muted);font-variant-numeric:tabular-nums}
+.related{margin-top:clamp(56px,7vw,96px)}
+.related .sh-t{font-size:var(--M)}
+.related .texts{margin-top:32px}
 
 /* úvodní stránka – Texty a Témata: kategorie leží na tenké lince, obsah z ní visí */
 .texts,.topics{list-style:none;margin:var(--after) 0 0;padding:0;display:grid;gap:48px clamp(24px,3vw,48px)}

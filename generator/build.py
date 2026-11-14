@@ -37,6 +37,7 @@ DEFAULTS = {
     "texty_vse": "Všechny texty",
     "temata_stitek": "02 — Témata",
     "temata_nabidka_nadpis": "Témata",
+    "souvisejici": "Související texty",
     "menu_label": "Menu",
     "skip": "Přeskočit na obsah",
     "projekt_problem": "Výchozí situace",
@@ -601,7 +602,7 @@ def notr_meta():
     return "" if browser_translation_allowed() else '\n<meta name="google" content="notranslate">'
 
 
-def page(lang, path, title, desc, body, alternates=True, noindex=None):
+def page(lang, path, title, desc, body, alternates=True, noindex=None, og_type="website", og_image="", extra_head=""):
     body = protect(body)
     if noindex is None:
         noindex = not yes(CFG.get("indexovat", "NE"))
@@ -638,8 +639,9 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None):
 <link rel="canonical" href="{canonical}">
 {alt}<meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{og_type}">
 <meta property="og:url" content="{canonical}">
+{f'<meta property="og:image" content="{e(og_image)}">' if og_image else ''}{extra_head}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/styl.css?v={CSS_VER}">
 <style>:root{{--accent:{e(accent)}}}</style>
@@ -1141,19 +1143,44 @@ def article_page(a, lang):
                    f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
                    for f in ph[1:] if f not in used) if not used else ""   # s obrázky v textu bez galerie
     desc = a.get("seo_popis_cz", "") if lang == "cs" else tr(a.get("seo_popis_cz", "") or a.get("perex_cz", ""), "", lang)
+    # Související texty: tři další články (nejnovější kromě aktuálního)
+    rel = [x for x in ARTICLES if x.get("slug") != a.get("slug")][:3]
+    rel_html = ""
+    if rel:
+        rl = "".join(
+            f'<li><a href="{url(lang, "clanky/" + x["slug"] + "/")}"><p class="cat">{e(article_meta(x, lang).split(" · ")[0])}</p>'
+            f'<h3>{e(F(x, "nazev", lang))}</h3></a></li>' for x in rel)
+        all_link = '<a class="link" href="' + url(lang, "clanky/") + '">' + e(T("texty_vse", lang)) + ' →</a>'
+        rel_html = (f'<section class="related">{sec_head(T("souvisejici", lang), all_link)}'
+                    f'<ul class="texts">{rl}</ul></section>')
+    lead_abs = (SITE_URL + img_url(ph[0])) if ph else ""
+    jsonld = {"@context": "https://schema.org", "@type": "Article", "headline": name,
+              "description": desc or F(a, "perex", lang), "inLanguage": lang,
+              "mainEntityOfPage": SITE_URL + url(lang, f"clanky/{a['slug']}/"),
+              "author": {"@type": "Person", "name": a.get("autor", "") or T("onas_jmeno", "cs"),
+                         **({"url": CFG.get("odkaz_2_url")} if CFG.get("odkaz_2_url") else {})},
+              "publisher": {"@type": "Organization", "name": "KvalitaMísta", "url": SITE_URL + "/"}}
+    if a.get("datum"):
+        jsonld["datePublished"] = a["datum"][:10]
+    if lead_abs:
+        jsonld["image"] = lead_abs
+    extra = (f'<meta property="article:published_time" content="{e(a.get("datum", "")[:10])}">\n' if a.get("datum") else "")
     body = f"""
 <article class="wrap detail-head sec">
-<p class="label">{e(article_meta(a, lang))}</p>
-<h1 class="L" style="margin-top:40px;max-width:20ch">{e(name)}</h1>
+<header class="sh"><div class="sh-row" style="margin-top:0"><p class="art-meta">{e(T("clanky_stitek", lang))}</p><p class="art-meta">{e(article_meta(a, lang))}</p></div></header>
+<h1 class="L" style="margin-top:var(--after);max-width:20ch">{e(name)}</h1>
 <p class="M measure" style="margin:28px 0 0">{e(F(a, "perex", lang))}</p>
 {lead}
 <div class="prose" style="margin-top:clamp(32px,4vw,56px)">{text_html}</div>
 {rest}
 {author_box(lang)}
+{rel_html}
 <p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
 </article>
+<script type="application/ld+json">{json.dumps(jsonld, ensure_ascii=False)}</script>
 """
-    return page(lang, f"clanky/{a['slug']}/", f"{name} — KvalitaMísta", desc or name, body)
+    return page(lang, f"clanky/{a['slug']}/", f"{name} — KvalitaMísta", desc or name, body,
+                og_type="article", og_image=lead_abs, extra_head=extra)
 
 
 # ---------------------------------------------------------------- ostatní
