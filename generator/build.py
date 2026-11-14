@@ -787,9 +787,15 @@ def sec_head(label, right="", tag="p"):
 
 
 def home_articles(n=4):
-    """Články na titulní stranu: nejdřív ty se sloupcem „titulni“ = ANO (podle pořadí),
-    zbytek doplní nejnovější články podle data."""
-    picked = sorted([a for a in ARTICLES if yes(a.get("titulni", ""))], key=lambda a: num(a.get("poradi")))[:n]
+    """Články na titulní stranu podle samostatného sloupce „titulni_poradi“ (1, 2, 3, 4 …).
+    Prázdná buňka = článek se na titulní stranu sám nedostane, volná místa doplní nejnovější články."""
+    def prio(a):
+        v = (a.get("titulni_poradi", "") or "").strip().replace(",", ".")
+        try:
+            return float(v)
+        except ValueError:
+            return None
+    picked = sorted([a for a in ARTICLES if prio(a) is not None], key=prio)[:n]
     rest = [a for a in ARTICLES if a not in picked]
     return picked + rest[:n - len(picked)]
 
