@@ -194,4 +194,19 @@ img{display:block;max-width:100%;height:auto}
 .offer > div{padding:0 0 22px}
 
 .hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px}
+
+/* úvod: nadpis a jedna věta */
+.hero-line{margin:clamp(40px,5vw,72px) 0 0;max-width:40ch;border-top:2px solid var(--fg);padding-top:24px}
+
+/* úvodní stránka – Texty a Témata */
+.sec-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 24px;padding-bottom:14px;border-bottom:2px solid var(--fg)}
+.texts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 clamp(24px,3vw,40px)}
+.texts li{padding:24px 0 8px}
+.texts a{display:block;text-decoration:none}
+.texts h3{margin:8px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.texts a:hover h3{text-decoration:underline;text-underline-offset:5px}
+.topics{list-style:none;margin:clamp(32px,4vw,48px) 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:40px clamp(24px,3vw,48px)}
+.topics li{border-top:1px solid var(--fg);padding-top:18px}
+.topics h3{margin:8px 0 0;font-size:var(--M);line-height:1.2;font-weight:600}
+.topic-detail{margin-top:clamp(28px,3vw,40px);padding-top:18px;border-top:1px solid var(--fg);max-width:820px}
 @media (max-width:560px){.fig-imgs{flex-direction:column}.fig-imgs .fig-i{flex:none!important}}
