@@ -762,14 +762,26 @@ def contact_form(lang, mail):
 
 
 # ---------------------------------------------------------------- úvodní stránka
-def topic_link(section, lang):
+def topic_link(section, lang, short=False):
     """Tichý odkaz „Více k tématu“ na článek podle slugu v textu <sekce>_clanek."""
     slug = T(f"{section}_clanek", "cs")
     a = next((x for x in ARTICLES if x.get("slug") == slug), None) if slug else None
     if not a:
         return ""
+    if short:
+        return (f'<p style="margin:20px 0 0"><a class="link" href="{url(lang, "clanky/" + slug + "/")}">'
+                f'{e(F(a, "nazev", lang))} →</a></p>')
     return (f'<p style="margin:24px 0 0"><span class="muted">{e(T("vice_k_tematu", lang))}:</span> '
             f'<a class="link" href="{url(lang, "clanky/" + slug + "/")}">{e(F(a, "nazev", lang))}</a></p>')
+
+
+def sec_head(label, right="", tag="p"):
+    """Hlavička kapitoly: linka nahoře, malé číslo, název ve stupni H, vpravo volitelný odkaz.
+    Štítek „03 — Jak pracujeme“ se rozdělí na číslo a název."""
+    m = re.match(r"\s*(\d+)\s*[—–-]\s*(.+)", label or "")
+    num, title = (m.group(1), m.group(2).strip()) if m else ("", (label or "").strip())
+    return (f'<header class="sh">{f"<p class=sh-num>{e(num)}</p>" if num else ""}'
+            f'<div class="sh-row"><{tag} class="sh-t">{e(title)}</{tag}>{right}</div></header>')
 
 
 def first_sentence(s):
@@ -874,11 +886,12 @@ def home(lang):
     texts_html = ""
     if ARTICLES:
         tl = "".join(
-            f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="muted p0">{e(article_meta(a, lang).split(" · ")[0])}</p>'
+            f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="cat">{e(article_meta(a, lang).split(" · ")[0])}</p>'
             f'<h3>{e(F(a, "nazev", lang))}</h3><p class="p0" style="margin-top:10px">{e(first_sentence(F(a, "perex", lang)))}</p></a></li>'
             for a in ARTICLES[:4])
+        more = f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
         texts_html = f"""<section id="texty" class="wrap sec" style="padding-top:0">
-<div class="sec-head"><p class="b p0">{e(T("texty_stitek", lang))}</p><a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a></div>
+{sec_head(T("texty_stitek", lang), more, "h2")}
 <ul class="texts">{tl}</ul>
 </section>"""
 
@@ -888,9 +901,9 @@ def home(lang):
         if not T(f"{sec}_nadpis", lang):
             continue
         name = re.sub(r"^\s*\d+\s*[—–-]\s*", "", T(f"{sec}_stitek", lang))
-        topics += (f'<li><p class="b p0">{e(name)}</p><h3>{e(T(f"{sec}_nadpis", lang))}</h3>'
-                   f'<p class="p0" style="margin-top:10px">{e(T(f"{sec}_text", lang))}</p>{topic_link(sec, lang)}</li>')
-    topics_html = (f'<section id="temata" class="wrap sec"><p class="label">{e(T("temata_stitek", lang))}</p>'
+        topics += (f'<li><p class="cat">{e(name)}</p><h3>{e(T(f"{sec}_nadpis", lang))}</h3>'
+                   f'<p class="p0" style="margin-top:10px">{e(T(f"{sec}_text", lang))}</p>{topic_link(sec, lang, short=True)}</li>')
+    topics_html = (f'<section id="temata" class="wrap sec">{sec_head(T("temata_stitek", lang), "", "h2")}'
                    f'<ul class="topics">{topics}</ul>'
                    + (f'<p style="margin:clamp(32px,4vw,48px) 0 0"><a class="link" href="{url(lang, "nabidka/")}#temata">{e(T("nabidka_odkaz", lang))} →</a></p>' if OFFER else "")
                    + '</section>') if topics else ""
@@ -914,8 +927,8 @@ def home(lang):
 
 <section id="postup" class="accent">
 <div class="wrap sec">
-<p class="label">{e(T("postup_stitek", lang))}</p>
-<h2 class="L" style="margin-top:40px">{br(T("postup_nadpis", lang))}</h2>
+{sec_head(T("postup_stitek", lang))}
+<h2 class="L sh-next">{br(T("postup_nadpis", lang))}</h2>
 <ol class="steps">{steps}</ol>
 <p class="M" style="margin:clamp(48px,6vw,72px) 0 0">{e(T("postup_zaver", lang))}</p>
 {f'<p class="measure" style="margin:16px 0 0">{e(spec)}</p>' if spec else ''}
@@ -924,15 +937,15 @@ def home(lang):
 </section>
 
 <section id="praxe" class="wrap sec">
-<p class="label">{e(T("praxe_stitek", lang))}</p>
-<h2 class="L" style="margin-top:40px;max-width:16ch">{e(T("praxe_nadpis", lang))}</h2>
+{sec_head(T("praxe_stitek", lang))}
+<h2 class="L sh-next" style="max-width:16ch">{e(T("praxe_nadpis", lang))}</h2>
 <div class="cards">{cards}</div>
 </section>
 
 <section id="o-nas" class="sand">
 <div class="wrap sec">
-<p class="label">{e(T("onas_stitek", lang))}</p>
-<blockquote class="L" style="margin:40px 0 0;max-width:18ch">{e(T("onas_citat", lang))}</blockquote>
+{sec_head(T("onas_stitek", lang))}
+<blockquote class="L sh-next" style="margin-left:0;margin-right:0;margin-bottom:0;max-width:18ch">{e(T("onas_citat", lang))}</blockquote>
 <div class="about">
 {f'<div class="portrait"><img src="{img_url(portrait)}" alt="{e(T("onas_jmeno", lang))}" loading="lazy"></div>' if portrait else ''}
 <div style="flex:1 1 380px;min-width:0;align-self:flex-end">
@@ -946,8 +959,8 @@ def home(lang):
 </section>
 
 <section id="kontakt" class="wrap sec">
-<p class="label">{e(T("kontakt_stitek", lang))}</p>
-<h2 class="L" style="margin-top:40px;max-width:18ch">{e(T("kontakt_nadpis", lang))}</h2>
+{sec_head(T("kontakt_stitek", lang))}
+<h2 class="L sh-next" style="max-width:18ch">{e(T("kontakt_nadpis", lang))}</h2>
 <p class="M" style="margin:24px 0 0;max-width:44ch">{e(T("kontakt_text", lang))}</p>
 <div class="big-contact">
 {f'<a href="tel:{tel}">{e(phone)}</a>' if phone else ''}
