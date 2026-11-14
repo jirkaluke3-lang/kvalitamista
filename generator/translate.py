@@ -176,6 +176,7 @@ def report_usage():
         c, l = u.get("character_count", 0), u.get("character_limit", 0)
         extra = f", období {u.get('start_time', '')[:10]} až {u.get('end_time', '')[:10]}" if u.get("end_time") else ""
         print(f"· DeepL: spotřeba {c:,} z {l:,} znaků ({(c / l * 100 if l else 0):.0f} %){extra}".replace(",", " "))
+        print(f"· DeepL: typ účtu {'Free' if KEY.endswith(':fx') else 'Pro'}, odpověď /v2/usage: {json.dumps(u, ensure_ascii=False)}")
     except Exception as ex:
         print(f"· DeepL: stav limitu nelze zjistit ({ex})")
 
@@ -210,6 +211,13 @@ def translate_many(texts, lang):
             except Exception as ex:
                 global last_error
                 last_error = str(ex)
+                try:
+                    detail = ex.read().decode("utf-8", "replace")[:300]
+                    if detail:
+                        last_error += " " + detail
+                        print(f"! DeepL – odpověď serveru: {detail}")
+                except Exception:
+                    pass
                 print(f"! DeepL: překlad do {lang} selhal ({ex}) — použije se čeština.")
                 failed.extend(texts[i] for i in chunk)
                 if getattr(ex, "code", 0) in (403, 456):   # špatný klíč / vyčerpaná kvóta
