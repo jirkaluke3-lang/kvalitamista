@@ -214,6 +214,16 @@ def doc_to_text(md):
     return "\n".join(out).strip()
 
 
+def translated(a):
+    """Článek se překládá do EN/DE jen na vyžádání: sloupec „prelozit“ = ANO v listu CLANKY."""
+    return yes(a.get("prelozit", ""))
+
+
+def arts(lang):
+    """Články pro danou jazykovou verzi: česky všechny, v EN/DE jen přeložené."""
+    return ARTICLES if lang == "cs" else [a for a in ARTICLES if translated(a) or a.get(f"text_{COL[lang]}")]
+
+
 for _a in ARTICLES:
     _doc = IMG / "clanky" / _a["slug"] / "_text.md"
     if _doc.exists():
@@ -258,9 +268,12 @@ def prefetch(lang):
     for r in LISTS:
         if r.get("cz") and not r.get(COL[lang]):
             texts.append(r["cz"])
-    for rows in (STEPS, PROJECTS, ARTICLES):
+    # články jen ty schválené k překladu; samotný text článku se překládá po odstavcích v article_text
+    for rows in (STEPS, PROJECTS, [a for a in ARTICLES if translated(a)]):
         for r in rows:
             for k, v in r.items():
+                if k == "text_cz":
+                    continue
                 if k.endswith("_cz") and v and not r.get(k[:-3] + "_" + COL[lang]):
                     texts.append(v)
     texts = list(dict.fromkeys(t for t in texts if t))
@@ -613,9 +626,9 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None, og_type="
         alt += f'<link rel="alternate" hreflang="x-default" href="{SITE_URL + url("cs", path)}">\n'
     cur = ' aria-current="true"'
     langnav = "".join(
-        f'<a href="{url(l, path)}" lang="{l}"{cur if l == lang else ""}>{LANG_LABEL[l]}</a>'
+        f'<a href="{url(l, path) if alternates or l == lang else url(l)}" lang="{l}"{cur if l == lang else ""}>{LANG_LABEL[l]}</a>'
         for l in LANGS)
-    items = [("menu_clanky", url(lang, "clanky/"))] if ARTICLES else []
+    items = [("menu_clanky", url(lang, "clanky/"))] if arts(lang) else []
     items += [("menu_postup", url(lang) + "#postup"), ("menu_praxe", url(lang) + "#praxe")]
     items.append(("menu_onas", url(lang) + "#o-nas"))
     if OFFER:
@@ -767,7 +780,7 @@ def contact_form(lang, mail):
 def topic_link(section, lang, short=False):
     """Tichý odkaz „Více k tématu“ na článek podle slugu v textu <sekce>_clanek."""
     slug = T(f"{section}_clanek", "cs")
-    a = next((x for x in ARTICLES if x.get("slug") == slug), None) if slug else None
+    a = next((x for x in arts(lang) if x.get("slug") == slug), None) if slug else None
     if not a:
         return ""
     if short:
@@ -788,7 +801,7 @@ def sec_head(label, right="", tag="p", grid=""):
             f'<div class="sh-blk"><{tag} class="sh-t">{e(title)}</{tag}></div>{more}</header>')
 
 
-def home_articles(n=4):
+def home_articles(lang, n=4):
     """Články na titulní stranu podle samostatného sloupce „titulni_poradi“ (1, 2, 3, 4 …).
     Prázdná buňka = článek se na titulní stranu sám nedostane, volná místa doplní nejnovější články."""
     def prio(a):
@@ -797,8 +810,9 @@ def home_articles(n=4):
             return float(v)
         except ValueError:
             return None
-    picked = sorted([a for a in ARTICLES if prio(a) is not None], key=prio)[:n]
-    rest = [a for a in ARTICLES if a not in picked]
+    pool = arts(lang)
+    picked = sorted([a for a in pool if prio(a) is not None], key=prio)[:n]
+    rest = [a for a in pool if a not in picked]
     return picked + rest[:n - len(picked)]
 
 
@@ -902,11 +916,11 @@ def home(lang):
 
     # Texty – poslední čtyři články hned pod úvodem
     texts_html = ""
-    if ARTICLES:
+    if arts(lang):
         tl = "".join(
             f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="cat">{e(article_meta(a, lang).split(" · ")[0])}</p>'
             f'<h3>{e(F(a, "nazev", lang))}</h3><p class="p0" style="margin-top:10px">{e(first_sentence(F(a, "perex", lang)))}</p></a></li>'
-            for a in home_articles())
+            for a in home_articles(lang))
         more =f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
         texts_html = f"""<section id="texty" class="wrap sec" style="padding-top:0">
 {sec_head(T("texty_stitek", lang), more, "h2", "texts")}
@@ -1053,7 +1067,7 @@ def articles_index(lang):
     lis = "".join(
         f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="muted p0">{e(article_meta(a, lang))}</p>'
         f'<h2>{e(F(a, "nazev", lang))}</h2><p class="measure" style="margin:8px 0 0">{e(F(a, "perex", lang))}</p></a></li>'
-        for a in ARTICLES)
+        for a in arts(lang))
     body = f"""
 <section class="wrap detail-head sec">
 <p class="label">{e(T("clanky_stitek", lang))}</p>
@@ -1072,8 +1086,10 @@ def article_text(a, lang):
         return F(a, "text", lang)
     out, prose = [], []
     def flush():
+        # po odstavcích: po úpravě článku se znovu přeloží jen změněné odstavce
         if prose:
-            out.append(tr("\n\n".join(prose), "", lang))
+            got = translate.translate_many(list(prose), lang)
+            out.append("\n\n".join(g or p for g, p in zip(got, prose)))
             prose.clear()
     for block in re.split(r"\n\s*\n", cz.strip()):
         if is_img_block(block):
@@ -1160,7 +1176,7 @@ def article_page(a, lang):
                    for f in ph[1:] if f not in used) if not used else ""   # s obrázky v textu bez galerie
     desc = a.get("seo_popis_cz", "") if lang == "cs" else tr(a.get("seo_popis_cz", "") or a.get("perex_cz", ""), "", lang)
     # Související texty: tři další články (nejnovější kromě aktuálního)
-    rel = [x for x in ARTICLES if x.get("slug") != a.get("slug")][:3]
+    rel = [x for x in arts(lang) if x.get("slug") != a.get("slug")][:3]
     rel_html = ""
     if rel:
         rl = "".join(
@@ -1195,8 +1211,9 @@ def article_page(a, lang):
 </article>
 <script type="application/ld+json">{json.dumps(jsonld, ensure_ascii=False)}</script>
 """
+    has_tr = translated(a) or any(a.get(f"text_{COL[l]}") for l in LANGS if l != "cs")
     return page(lang, f"clanky/{a['slug']}/", f"{name} — KvalitaMísta", desc or name, body,
-                og_type="article", og_image=lead_abs, extra_head=extra)
+                alternates=has_tr, og_type="article", og_image=lead_abs, extra_head=extra)
 
 
 # ---------------------------------------------------------------- ostatní
@@ -1293,9 +1310,9 @@ def main():
             pages.append(url(lang, f"projekty/{p['slug']}/"))
         if OFFER:
             write(prefix(lang) + "nabidka/index.html", offer_page(lang)); pages.append(url(lang, "nabidka/"))
-        if ARTICLES:
+        if arts(lang):
             write(prefix(lang) + "clanky/index.html", articles_index(lang)); pages.append(url(lang, "clanky/"))
-            for a in ARTICLES:
+            for a in arts(lang):
                 write(prefix(lang) + f"clanky/{a['slug']}/index.html", article_page(a, lang))
                 pages.append(url(lang, f"clanky/{a['slug']}/"))
     write("preklady/index.html", control_page())
