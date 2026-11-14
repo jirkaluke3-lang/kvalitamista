@@ -166,6 +166,20 @@ def _glossary_id(lang):
     return _glossary[lang]
 
 
+def report_usage():
+    """Vypíše do záznamu sestavení, kolik znaků z měsíčního limitu DeepL je spotřebováno."""
+    if not KEY:
+        print("· DeepL: klíč není nastaven")
+        return
+    try:
+        u = _request_once("/v2/usage", None, method="GET")
+        c, l = u.get("character_count", 0), u.get("character_limit", 0)
+        extra = f", období {u.get('start_time', '')[:10]} až {u.get('end_time', '')[:10]}" if u.get("end_time") else ""
+        print(f"· DeepL: spotřeba {c:,} z {l:,} znaků ({(c / l * 100 if l else 0):.0f} %){extra}".replace(",", " "))
+    except Exception as ex:
+        print(f"· DeepL: stav limitu nelze zjistit ({ex})")
+
+
 def cleanup():
     for lang, gid in _glossary.items():
         if gid:

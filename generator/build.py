@@ -1277,6 +1277,7 @@ def copy_images():
 
 
 def main():
+    translate.report_usage()
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
