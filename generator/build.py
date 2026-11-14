@@ -1332,6 +1332,10 @@ def copy_images():
 
 def main():
     translate.report_usage()
+    for _l in LANGS:
+        if _l != "cs":
+            _miss = [a["slug"] for a in ARTICLES if a not in arts(_l)]
+            print(f"· články {_l.upper()}: {len(arts(_l))} z {len(ARTICLES)}" + (f", bez překladu: {', '.join(_miss)}" if _miss else ""))
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir()
