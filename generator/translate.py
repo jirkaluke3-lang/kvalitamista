@@ -190,6 +190,12 @@ def cleanup():
                 pass
 
 
+def lookup(texts, lang):
+    """Jen z paměti překladů – bez volání DeepL (None tam, kde překlad není)."""
+    cache = _load()
+    return [cache.get(_key(t, lang)) if t else "" for t in texts]
+
+
 def translate_many(texts, lang):
     """Přeloží seznam českých textů; vrátí seznam (None tam, kde překlad není)."""
     global _disabled

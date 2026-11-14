@@ -221,7 +221,8 @@ def translated(a):
 
 def arts(lang):
     """Články pro danou jazykovou verzi: česky všechny, v EN/DE jen přeložené."""
-    return ARTICLES if lang == "cs" else [a for a in ARTICLES if translated(a) or a.get(f"text_{COL[lang]}")]
+    return ARTICLES if lang == "cs" else [a for a in ARTICLES
+                                         if translated(a) or a.get(f"text_{COL[lang]}") or cached_article(a, lang)]
 
 
 for _a in ARTICLES:
@@ -1078,18 +1079,28 @@ def articles_index(lang):
     return page(lang, "clanky/", f'{T("clanky_nadpis", lang)} — KvalitaMísta', T("clanky_nadpis", lang), body)
 
 
-def article_text(a, lang):
-    """Text článku; obrázkové bloky se do DeepL neposílají, překládá se jen jejich popisek."""
+def article_text(a, lang, strict=False):
+    """Text článku; obrázkové bloky se do DeepL neposílají, překládá se jen jejich popisek.
+    Nejdřív se použije dřívější překlad z paměti (celý úsek mezi obrázky), pak překlad po odstavcích.
+    DeepL se volá jen u článků schválených sloupcem „prelozit“; ostatní berou jen to, co je v paměti.
+    strict=True: vrátí None, pokud v paměti některá část chybí (pro rozhodnutí, zda článek v EN/DE ukázat)."""
     cz = a.get("text_cz", "")
     manual = a.get(f"text_{COL[lang]}", "") if lang != "cs" else ""
     if lang == "cs" or manual or not cz:
         return F(a, "text", lang)
-    out, prose = [], []
+    api = translated(a) and not strict
+    out, prose, missing = [], [], []
     def flush():
-        # po odstavcích: po úpravě článku se znovu přeloží jen změněné odstavce
         if prose:
-            got = translate.translate_many(list(prose), lang)
-            out.append("\n\n".join(g or p for g, p in zip(got, prose)))
+            old = translate.lookup(["\n\n".join(prose)], lang)[0]
+            if old:
+                out.append(old)
+            else:
+                # po odstavcích: po úpravě článku se znovu přeloží jen změněné odstavce
+                got = translate.translate_many(list(prose), lang) if api else translate.lookup(list(prose), lang)
+                if any(g is None for g in got):
+                    missing.append(1)
+                out.append("\n\n".join(g or p for g, p in zip(got, prose)))
             prose.clear()
     for block in re.split(r"\n\s*\n", cz.strip()):
         if is_img_block(block):
@@ -1100,13 +1111,31 @@ def article_text(a, lang):
                 if not m:
                     continue
                 parts = [t.strip() for t in m.group(1).split("|")]
-                parts[0] = tr(parts[0], "", lang)
+                if parts[0]:
+                    parts[0] = (tr(parts[0], "", lang) if api
+                                else (translate.lookup([parts[0]], lang)[0] or parts[0]))
                 lines.append(f"![{' | '.join(parts)}]({m.group(2)})")
             out.append("\n".join(lines))
         else:
             prose.append(block)
     flush()
+    if strict and missing:
+        return None
     return "\n\n".join(out)
+
+
+_cached_ok = {}
+
+
+def cached_article(a, lang):
+    """Má článek v EN/DE hotový dřívější překlad v paměti (název, perex i text)? Bez volání DeepL."""
+    k = (a.get("slug"), lang)
+    if k not in _cached_ok:
+        def ok(field):
+            cz = a.get(f"{field}_cz", "")
+            return not cz or a.get(f"{field}_{COL[lang]}") or translate.lookup([cz], lang)[0]
+        _cached_ok[k] = bool(ok("nazev") and ok("perex") and article_text(a, lang, strict=True) is not None)
+    return _cached_ok[k]
 
 
 def coop_block(lang):
@@ -1174,7 +1203,13 @@ def article_page(a, lang):
     rest = "".join(f'<figure style="margin:24px 0 0"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
                    f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
                    for f in ph[1:] if f not in used) if not used else ""   # s obrázky v textu bez galerie
-    desc = a.get("seo_popis_cz", "") if lang == "cs" else tr(a.get("seo_popis_cz", "") or a.get("perex_cz", ""), "", lang)
+    src = a.get("seo_popis_cz", "") or a.get("perex_cz", "")
+    if lang == "cs":
+        desc = a.get("seo_popis_cz", "")
+    elif translated(a):
+        desc = tr(src, "", lang)
+    else:   # dříve přeložený článek: jen z paměti, bez čerpání limitu
+        desc = translate.lookup([src], lang)[0] or translate.lookup([a.get("perex_cz", "")], lang)[0] or ""
     # Související texty: tři další články (nejnovější kromě aktuálního)
     rel = [x for x in arts(lang) if x.get("slug") != a.get("slug")][:3]
     rel_html = ""
@@ -1211,7 +1246,7 @@ def article_page(a, lang):
 </article>
 <script type="application/ld+json">{json.dumps(jsonld, ensure_ascii=False)}</script>
 """
-    has_tr = translated(a) or any(a.get(f"text_{COL[l]}") for l in LANGS if l != "cs")
+    has_tr = all(a in arts(l) for l in LANGS if l != "cs")
     return page(lang, f"clanky/{a['slug']}/", f"{name} — KvalitaMísta", desc or name, body,
                 alternates=has_tr, og_type="article", og_image=lead_abs, extra_head=extra)
 
