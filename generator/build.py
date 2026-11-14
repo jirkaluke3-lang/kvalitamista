@@ -777,13 +777,15 @@ def topic_link(section, lang, short=False):
             f'<a class="link" href="{url(lang, "clanky/" + slug + "/")}">{e(F(a, "nazev", lang))}</a></p>')
 
 
-def sec_head(label, right="", tag="p"):
-    """Hlavička kapitoly: linka nahoře, malé číslo, název ve stupni H, vpravo volitelný odkaz.
-    Štítek „03 — Jak pracujeme“ se rozdělí na číslo a název."""
-    m = re.match(r"\s*(\d+)\s*[—–-]\s*(.+)", label or "")
-    num, title = (m.group(1), m.group(2).strip()) if m else ("", (label or "").strip())
-    return (f'<header class="sh">{f"<p class=sh-num>{e(num)}</p>" if num else ""}'
-            f'<div class="sh-row"><{tag} class="sh-t">{e(title)}</{tag}>{right}</div></header>')
+def sec_head(label, right="", tag="p", grid=""):
+    """Hlavička kapitoly: černá linka nahoře, pod ní lipový blok s názvem ve stupni H.
+    Blok je široký jako první sloupec mřížky pod ním (grid = texts / topics / cards)
+    a barvou přesahuje doleva, aby písmo lícovalo s textem sloupců.
+    Číslo ze štítku („03 — Jak pracujeme“) se nezobrazuje."""
+    title = re.sub(r"^\s*\d+\s*[—–-]\s*", "", label or "").strip()
+    more = f'<div class="sh-more">{right}</div>' if right else ""
+    return (f'<header class="sh sh-g{" sh-" + grid if grid else ""}">'
+            f'<div class="sh-blk"><{tag} class="sh-t">{e(title)}</{tag}></div>{more}</header>')
 
 
 def home_articles(n=4):
@@ -907,7 +909,7 @@ def home(lang):
             for a in home_articles())
         more =f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
         texts_html = f"""<section id="texty" class="wrap sec" style="padding-top:0">
-{sec_head(T("texty_stitek", lang), more, "h2")}
+{sec_head(T("texty_stitek", lang), more, "h2", "texts")}
 <ul class="texts">{tl}</ul>
 </section>"""
 
@@ -919,7 +921,7 @@ def home(lang):
         name = re.sub(r"^\s*\d+\s*[—–-]\s*", "", T(f"{sec}_stitek", lang))
         topics += (f'<li><p class="cat">{e(name)}</p><h3>{e(T(f"{sec}_nadpis", lang))}</h3>'
                    f'<p class="p0" style="margin-top:10px">{e(T(f"{sec}_text", lang))}</p>{topic_link(sec, lang, short=True)}</li>')
-    topics_html = (f'<section id="temata" class="wrap sec">{sec_head(T("temata_stitek", lang), "", "h2")}'
+    topics_html = (f'<section id="temata" class="wrap sec">{sec_head(T("temata_stitek", lang), "", "h2", "topics")}'
                    f'<ul class="topics">{topics}</ul>'
                    + (f'<p style="margin:clamp(32px,4vw,48px) 0 0"><a class="link" href="{url(lang, "nabidka/")}#temata">{e(T("nabidka_odkaz", lang))} →</a></p>' if OFFER else "")
                    + '</section>') if topics else ""
@@ -953,7 +955,7 @@ def home(lang):
 </section>
 
 <section id="praxe" class="wrap sec">
-{sec_head(T("praxe_stitek", lang))}
+{sec_head(T("praxe_stitek", lang), grid="cards")}
 <h2 class="L sh-next" style="max-width:16ch">{e(T("praxe_nadpis", lang))}</h2>
 <div class="cards">{cards}</div>
 </section>
@@ -1165,7 +1167,7 @@ def article_page(a, lang):
             f'<li><a href="{url(lang, "clanky/" + x["slug"] + "/")}"><p class="cat">{e(article_meta(x, lang).split(" · ")[0])}</p>'
             f'<h3>{e(F(x, "nazev", lang))}</h3></a></li>' for x in rel)
         all_link = '<a class="link" href="' + url(lang, "clanky/") + '">' + e(T("texty_vse", lang)) + ' →</a>'
-        rel_html = (f'<section class="related">{sec_head(T("souvisejici", lang), all_link)}'
+        rel_html = (f'<section class="related">{sec_head(T("souvisejici", lang), all_link, grid="texts")}'
                     f'<ul class="texts">{rl}</ul></section>')
     lead_abs = (SITE_URL + img_url(ph[0])) if ph else ""
     jsonld = {"@context": "https://schema.org", "@type": "Article", "headline": name,
