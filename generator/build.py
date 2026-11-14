@@ -786,6 +786,14 @@ def sec_head(label, right="", tag="p"):
             f'<div class="sh-row"><{tag} class="sh-t">{e(title)}</{tag}>{right}</div></header>')
 
 
+def home_articles(n=4):
+    """Články na titulní stranu: nejdřív ty se sloupcem „titulni“ = ANO (podle pořadí),
+    zbytek doplní nejnovější články podle data."""
+    picked = sorted([a for a in ARTICLES if yes(a.get("titulni", ""))], key=lambda a: num(a.get("poradi")))[:n]
+    rest = [a for a in ARTICLES if a not in picked]
+    return picked + rest[:n - len(picked)]
+
+
 def first_sentence(s):
     """První věta textu (pro krátký výpis článků)."""
     m = re.match(r"(.+?[.!?])(\s|$)", (s or "").strip(), re.S)
@@ -890,8 +898,8 @@ def home(lang):
         tl = "".join(
             f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="cat">{e(article_meta(a, lang).split(" · ")[0])}</p>'
             f'<h3>{e(F(a, "nazev", lang))}</h3><p class="p0" style="margin-top:10px">{e(first_sentence(F(a, "perex", lang)))}</p></a></li>'
-            for a in ARTICLES[:4])
-        more = f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
+            for a in home_articles())
+        more =f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
         texts_html = f"""<section id="texty" class="wrap sec" style="padding-top:0">
 {sec_head(T("texty_stitek", lang), more, "h2")}
 <ul class="texts">{tl}</ul>
