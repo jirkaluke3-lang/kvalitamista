@@ -348,7 +348,7 @@ def remote_image(src):
         try:
             WEB_CACHE.mkdir(parents=True, exist_ok=True)
             url = urllib.parse.quote(src, safe=":/?=&%#~+,;@!$'*")
-            req = urllib.request.Request(url, headers={"User-Agent": "kvalitamista.cz-build/1.0 (jirka.luke3@gmail.com)"})
+            req = urllib.request.Request(url, headers={"User-Agent": "kvalitamista.cz-build/1.0 (+https://kvalitamista.cz)"})
             with urllib.request.urlopen(req, timeout=120) as r:
                 local.write_bytes(r.read())
             print(f"· staženo z webu: {name}")
@@ -506,6 +506,13 @@ def name_caption(p):
     return ""
 
 
+def file_caption(p):
+    """Popisek z názvu souboru jen podle dohodnuté konvence „01_Popisek.jpg“ (číslo, podtržítko, text).
+    Jiné názvy souborů (např. exporty z výkresů) se jako popisek nikdy nezobrazí."""
+    stem = unicodedata.normalize("NFC", p.stem)
+    return name_caption(p) if re.match(r"^\d+\s*_", stem) else ""
+
+
 def plain(s):
     """Bez diakritiky a malými písmeny: „Hlavní_Bern“ -> „hlavni_bern“."""
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
@@ -583,9 +590,14 @@ NO_TRANSLATE = re.compile(
     r"|IN—FORM—ARCHITEKTI(?:,\s*s\.r\.o\.)?|Kvalita\s?M[íi]sta|ČKA")
 
 
+NOWRAP = re.compile(r"In[—–-]Form[—–-]Architekti", re.I)
+
+
 def protect(body):
     def text(m):
-        return ">" + NO_TRANSLATE.sub(lambda n: f'<span translate="no" class="notranslate">{n.group(0)}</span>', m.group(1)) + "<"
+        t = NO_TRANSLATE.sub(lambda n: f'<span translate="no" class="notranslate">{n.group(0)}</span>', m.group(1))
+        t = NOWRAP.sub(lambda n: f'<span class="nw">{n.group(0)}</span>', t)   # název ateliéru se nezalamuje
+        return ">" + t + "<"
     parts = re.split(r"(<script\b.*?</script>|<title>.*?</title>)", body, flags=re.S)
     return "".join(p if i % 2 else re.sub(r">([^<>]+)<", text, p) for i, p in enumerate(parts))
 
@@ -629,12 +641,12 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None, og_type="
     langnav = "".join(
         f'<a href="{url(l, path) if alternates or l == lang else url(l)}" lang="{l}"{cur if l == lang else ""}>{LANG_LABEL[l]}</a>'
         for l in LANGS)
-    items = [("menu_clanky", url(lang, "clanky/"))] if arts(lang) else []
+    # pořadí položek = pořadí sekcí na úvodní stránce
+    items = [("menu_nabidka", url(lang, "nabidka/"))] if OFFER else []
     items += [("menu_postup", url(lang) + "#postup"), ("menu_praxe", url(lang) + "#praxe")]
-    items.append(("menu_onas", url(lang) + "#o-nas"))
-    if OFFER:
-        items.append(("menu_nabidka", url(lang, "nabidka/")))
-    items.append(("menu_kontakt", url(lang) + "#kontakt"))
+    if arts(lang):
+        items.append(("menu_clanky", url(lang, "clanky/")))
+    items += [("menu_onas", url(lang) + "#o-nas"), ("menu_kontakt", url(lang) + "#kontakt")]
     menu = "".join(f'<li><a href="{h}">{e(T(k, lang))}</a></li>' for k, h in items)
     accent = CFG.get("barva_akcentu", "") or "#ECE48A"
     links = ""
@@ -668,6 +680,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None, og_type="
 <nav class="lang notranslate" translate="no" aria-label="{e(T('jazyk', lang))}">{langnav}</nav>
 <div class="row">
 <a class="logo notranslate" translate="no" href="{url(lang)}" aria-label="KvalitaMísta">{LOGO}</a>
+<nav class="nav-main" aria-label="{e(T('hlavni_menu', lang))}"><ul>{menu}</ul></nav>
 <details class="menu">
 <summary aria-label="{e(T('menu_label', lang))}"><span></span><span></span><span></span></summary>
 <nav aria-label="{e(T('hlavni_menu', lang))}" onclick="if(event.target.closest('a'))this.closest('details').open=false"><ul>{menu}</ul></nav>
@@ -682,7 +695,7 @@ def page(lang, path, title, desc, body, alternates=True, noindex=None, og_type="
 <footer>
 <div class="foot"><div class="wrap">
 <p class="foot-logo notranslate" translate="no"><span class="sr">KvalitaMísta</span>{LOGO}</p>
-<p class="foot-claim M">{e(T("paticka_heslo", lang))}</p>
+<p class="foot-claim M b">{e(T("paticka_heslo", lang))}</p>
 </div></div>
 <nav class="wrap foot-links" aria-label="{e(T('odkazy', lang))}">
 {links}</nav>
@@ -755,12 +768,23 @@ SLIDES_JS = """<script>
 </script>"""
 
 
+def btn_text(s):
+    """Text tlačítka bez koncové pomlčky nebo šipky – tlačítko je zřejmé samo."""
+    return re.sub(r"\s*[—–→-]+\s*$", "", s or "")
+
+
+def arrow(s):
+    """Odkaz, který vede dál, končí vždy šipkou →."""
+    s = re.sub(r"\s*[—–→-]+\s*$", "", s or "")
+    return f"{s} →" if s else ""
+
+
 def contact_form(lang, mail):
     endpoint = CFG.get("formular_url", "")
     req = f' <span class="muted">({e(T("form_povinne", lang))})</span>'
     return f"""
 <details class="form" id="formular">
-<summary class="btn">{e(T("tlacitko", lang))}</summary>
+<summary class="btn">{e(btn_text(T("tlacitko", lang)))}</summary>
 <form data-endpoint="{e(endpoint)}" data-mail="{e(mail)}" data-subject="{e(T('form_predmet', lang))}" novalidate>
 <label>{e(T("form_jmeno", lang))}<input name="jmeno" autocomplete="name"></label>
 <label>{e(T("form_obec", lang))}<input name="obec" autocomplete="organization"></label>
@@ -769,8 +793,8 @@ def contact_form(lang, mail):
 <label>{e(T("form_telefon", lang))}<input name="telefon" type="tel" autocomplete="tel"></label>
 <label class="hp" aria-hidden="true">Web<input name="web" tabindex="-1" autocomplete="off"></label>
 <input type="hidden" name="jazyk" value="{lang}">
-<p class="muted measure" style="margin:4px 0 0">{e(T("form_souhlas", lang))}</p>
-<p style="margin:8px 0 0"><button class="btn" type="submit">{e(T("form_odeslat", lang))}</button></p>
+<p class="form-note">{e(T("form_souhlas", lang))}</p>
+<p class="p0"><button class="btn" type="submit">{e(btn_text(T("form_odeslat", lang)))}</button></p>
 </form>
 <p class="form-msg M" role="status" hidden data-ok="{e(T('form_dekujeme', lang))}" data-err="{e(T('form_chyba', lang))}"></p>
 </details>
@@ -778,32 +802,29 @@ def contact_form(lang, mail):
 
 
 # ---------------------------------------------------------------- úvodní stránka
-def topic_link(section, lang, short=False):
-    """Tichý odkaz „Více k tématu“ na článek podle slugu v textu <sekce>_clanek."""
+def topic_link(section, lang):
+    """Tichý odkaz „Více k tématu“ na článek podle slugu v textu <sekce>_clanek (stránka Spolupráce)."""
     slug = T(f"{section}_clanek", "cs")
     a = next((x for x in arts(lang) if x.get("slug") == slug), None) if slug else None
     if not a:
         return ""
-    if short:
-        return (f'<p style="margin:20px 0 0"><a class="link" href="{url(lang, "clanky/" + slug + "/")}">'
-                f'{e(F(a, "nazev", lang))} →</a></p>')
-    return (f'<p style="margin:24px 0 0"><span class="muted">{e(T("vice_k_tematu", lang))}:</span> '
+    return (f'<p><span class="muted">{e(T("vice_k_tematu", lang))}:</span> '
             f'<a class="link" href="{url(lang, "clanky/" + slug + "/")}">{e(F(a, "nazev", lang))}</a></p>')
 
 
-def sec_head(label, right="", tag="p", grid=""):
-    """Hlavička kapitoly: černá linka nahoře, pod ní lipový blok s názvem ve stupni H.
-    Blok je široký jako první sloupec mřížky pod ním (grid = texts / topics / cards)
-    a barvou přesahuje doleva, aby písmo lícovalo s textem sloupců.
-    Číslo ze štítku („03 — Jak pracujeme“) se nezobrazuje."""
-    title = re.sub(r"^\s*\d+\s*[—–-]\s*", "", label or "").strip()
+def strip_num(label):
+    """„03 — Jak pracujeme“ → „Jak pracujeme“ (číslo ze štítku se nezobrazuje)."""
+    return re.sub(r"^\s*\d+\s*[—–-]\s*", "", label or "").strip()
+
+
+def sec_head(label, right="", tag="p"):
+    """Štítek kapitoly: tlustá linka, pod ní malý název a případně odkaz vpravo."""
     more = f'<div class="sh-more">{right}</div>' if right else ""
-    return (f'<header class="sh sh-g{" sh-" + grid if grid else ""}">'
-            f'<div class="sh-blk"><{tag} class="sh-t">{e(title)}</{tag}></div>{more}</header>')
+    return f'<header class="sh"><{tag} class="sh-t">{e(strip_num(label))}</{tag}>{more}</header>'
 
 
-def home_articles(lang, n=4):
-    """Články na titulní stranu podle samostatného sloupce „titulni_poradi“ (1, 2, 3, 4 …).
+def home_articles(lang, n=3):
+    """Články na titulní stranu podle samostatného sloupce „titulni_poradi“ (1, 2, 3 …).
     Prázdná buňka = článek se na titulní stranu sám nedostane, volná místa doplní nejnovější články."""
     def prio(a):
         v = (a.get("titulni_poradi", "") or "").strip().replace(",", ".")
@@ -823,24 +844,35 @@ def first_sentence(s):
     return m.group(1) if m else (s or "")
 
 
+def split_lead(s, n=2):
+    """Perex = první n vět, zbytek běžný text. Dlouhý úvod se tak nesází celý ve velikosti perexu."""
+    s = (s or "").strip()
+    parts = re.split(r"(?<=[.!?])\s+(?=[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ„])", s)
+    if len(parts) <= n + 1:
+        return s, ""
+    return " ".join(parts[:n]), " ".join(parts[n:])
+
+
+TOPICS = ("situace", "budovy", "bydleni")
+
+
 def topic_details(lang):
-    """Podrobné seznamy tří témat – na stránce Spolupráce (dříve na úvodní stránce)."""
+    """Podrobnosti tří témat na stránce Spolupráce; každé má kotvu #tema-<sekce> pro karty z úvodní stránky."""
     out = ""
-    for sec in ("situace", "budovy", "bydleni"):
+    for sec in TOPICS:
         if not T(f"{sec}_nadpis", lang):
             continue
-        name = re.sub(r"^\s*\d+\s*[—–-]\s*", "", T(f"{sec}_stitek", lang))
-        parts = [f'<p class="b p0">{e(name)}</p>',
-                 f'<h3 class="M b" style="margin:8px 0 0;line-height:1.2">{e(T(f"{sec}_nadpis", lang))}</h3>',
-                 f'<p class="measure" style="margin:12px 0 0">{e(T(f"{sec}_text", lang))}</p>']
+        parts = [f'<p class="cat">{e(strip_num(T(f"{sec}_stitek", lang)))}</p>',
+                 f'<h3>{e(T(f"{sec}_nadpis", lang))}</h3>',
+                 f'<p>{e(T(f"{sec}_text", lang))}</p>']
         for intro, lst in ((f"{sec}_uvod_seznamu", sec), (f"{sec}_text_2", f"{sec}_posoudime" if sec == "bydleni" else sec)):
             body = dash_list(lst, lang)
             if T(intro, lang) and body:
-                parts.append(f'<p class="b" style="margin:24px 0 0">{e(T(intro, lang))}</p>{body}')
+                parts.append(f'<p class="b">{e(T(intro, lang))}</p>{body}')
         if T(f"{sec}_zaver", lang):
-            parts.append(f'<p class="measure" style="margin:20px 0 0">{e(T(f"{sec}_zaver", lang))}</p>')
+            parts.append(f'<p>{e(T(f"{sec}_zaver", lang))}</p>')
         parts.append(topic_link(sec, lang))
-        out += f'<div class="topic-detail">{"".join(parts)}</div>'
+        out += f'<div class="topic-detail" id="tema-{sec}">{"".join(parts)}</div>'
     return (f'<h2 class="coop-h" id="temata">{e(T("temata_nabidka_nadpis", lang))}</h2>{out}') if out else ""
 
 
@@ -849,7 +881,7 @@ def dash_list(name, lang):
     if not rows:
         return ""
     lis = "".join(f'<li><span aria-hidden="true">—</span><span>{e(tr(r.get("cz", ""), r.get(COL[lang], ""), lang))}</span></li>' for r in rows)
-    return f'<ul class="dash M">{lis}</ul>'
+    return f'<ul class="dash">{lis}</ul>'
 
 
 def project_meta(p, lang):
@@ -863,17 +895,23 @@ def cooperation(p, lang):
         return ""
     link = p.get("spoluprace_odkaz", "")
     who = f'<a href="{e(link)}">{e(name)}</a>' if link else e(name)
-    return f'<p class="muted" style="margin:10px 0 0">{e(T("praxe_spoluprace", lang))} {who}</p>'
+    return f'<p class="muted">{e(T("praxe_spoluprace", lang))} {who}</p>'
+
+
+def phone_html(phone):
+    return e(phone).replace(" ", "&nbsp;")
 
 
 def home(lang):
     phone = CFG.get("telefon", "")
     mail = CFG.get("email", "")
     tel = re.sub(r"[^\d+]", "", phone)
+
+    # titulní fotografie (může jich být víc, střídají se); bez počítadla – jen popisek
     hphotos = hero_photos()
     if not hphotos and cfg_photo("hlavni_foto"):
         hphotos = [cfg_photo("hlavni_foto")]
-    hero_html = ""
+    photo_html = ""
     if hphotos:
         pos = e(CFG.get("hlavni_foto_pozice", "") or "50% 22%")
         alt = e(T("foto_popis", lang))
@@ -884,18 +922,34 @@ def home(lang):
         nav = ""
         if len(hphotos) > 1:
             nav = (f'<button class="sl-prev" type="button" aria-label="{e(T("foto_predchozi", lang))}"></button>'
-                   f'<button class="sl-next" type="button" aria-label="{e(T("foto_dalsi", lang))}"></button>'
-                   f'<span class="sl-count" aria-hidden="true"></span>')
-        hero_html = (f'<figure class="photo slides">{imgs}'
-                     f'<noscript><img src="{img_url(hphotos[0])}" alt="{alt}" style="object-position:{pos}"></noscript>'
-                     f'{nav}<figcaption>{e(cap0)}</figcaption></figure>{SLIDES_JS}')
+                   f'<button class="sl-next" type="button" aria-label="{e(T("foto_dalsi", lang))}"></button>')
+        photo_html = (f'<figure class="photo slides">{imgs}'
+                      f'<noscript><img src="{img_url(hphotos[0])}" alt="{alt}" style="object-position:{pos}"></noscript>'
+                      f'{nav}<figcaption>{e(cap0)}</figcaption></figure>{SLIDES_JS}')
     portrait = cfg_photo("portret")
 
+    # 1 · Témata (co řešíme): karta vede na podrobnosti na stránce Spolupráce
+    topics = ""
+    for sec in TOPICS:
+        if not T(f"{sec}_nadpis", lang):
+            continue
+        inner = (f'<p class="cat">{e(strip_num(T(f"{sec}_stitek", lang)))}</p>'
+                 f'<h3>{e(T(f"{sec}_nadpis", lang))}</h3><p>{e(T(f"{sec}_text", lang))}</p>')
+        topics += (f'<li><a href="{url(lang, "nabidka/")}#tema-{sec}">{inner}</a></li>' if OFFER
+                   else f'<li>{inner}</li>')
+    topics_html = (f'<section id="temata" class="wrap sec">{sec_head(T("temata_stitek", lang), tag="h2")}'
+                   f'<ul class="grid3">{topics}</ul></section>') if topics else ""
+
+    # 2 · Jak pracujeme
     steps = "".join(
         f'<li><span class="num">{i:02d}</span>'
         f'<h3>{e(F(s, "nazev", lang))}</h3><p>{e(F(s, "popis", lang))}</p></li>'
         for i, s in enumerate(STEPS, 1))
+    spec = T("postup_specialiste", lang)
+    offer_link = (f'<p><a class="link" href="{url(lang, "nabidka/")}">{e(arrow(T("nabidka_odkaz", lang)))}</a></p>'
+                  if OFFER else "")
 
+    # 3 · Z praxe
     cards = ""
     for p in PROJECTS:
         ph = photos("projekty", p["slug"])
@@ -903,43 +957,26 @@ def home(lang):
                if ph else "")
         cards += f"""<article class="card">
 {img}
-<p class="b" style="margin:20px 0 0">{e(project_meta(p, lang))}</p>
+<p class="cat">{e(project_meta(p, lang))}</p>
 <h3>{e(F(p, "nazev", lang))}</h3>
-<p class="measure" style="margin:12px 0 0">{br(F(p, "anotace", lang))}</p>
+<p class="measure">{br(F(p, "anotace", lang))}</p>
 {cooperation(p, lang)}
-<p style="margin:14px 0 0"><a class="link" href="{url(lang, 'projekty/' + p['slug'] + '/')}">{e(T("praxe_odkaz", lang))}</a></p>
+<p><a class="link" href="{url(lang, 'projekty/' + p['slug'] + '/')}">{e(arrow(T("praxe_odkaz", lang)))}</a></p>
 </article>
 """
 
-    spec = T("postup_specialiste", lang)
-    offer_link = (f'<p style="margin:24px 0 0"><a class="link" href="{url(lang, 'nabidka/')}">{e(T("nabidka_odkaz", lang))} →</a></p>'
-                  if OFFER else "")
-
-    # Texty – poslední čtyři články hned pod úvodem
+    # 4 · Texty – tři články
     texts_html = ""
     if arts(lang):
         tl = "".join(
-            f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="cat">{e(article_meta(a, lang).split(" · ")[0])}</p>'
-            f'<h3>{e(F(a, "nazev", lang))}</h3><p class="p0" style="margin-top:10px">{e(first_sentence(F(a, "perex", lang)))}</p></a></li>'
+            f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="cat date">{article_date(a, lang)}</p>'
+            f'<h3>{e(F(a, "nazev", lang))}</h3><p>{e(first_sentence(F(a, "perex", lang)))}</p></a></li>'
             for a in home_articles(lang))
-        more =f'<a class="link" href="{url(lang, "clanky/")}">{e(T("texty_vse", lang))} →</a>'
-        texts_html = f"""<section id="texty" class="wrap sec" style="padding-top:0">
-{sec_head(T("texty_stitek", lang), more, "h2", "texts")}
-<ul class="texts">{tl}</ul>
+        more = f'<a class="link" href="{url(lang, "clanky/")}">{e(arrow(T("texty_vse", lang)))}</a>'
+        texts_html = f"""<section id="texty" class="wrap sec">
+{sec_head(T("texty_stitek", lang), more, "h2")}
+<ul class="grid3">{tl}</ul>
 </section>"""
-
-    # Témata – tři oblasti v jednom oddílu, podrobnosti jsou na stránce Spolupráce
-    topics = ""
-    for sec in ("situace", "budovy", "bydleni"):
-        if not T(f"{sec}_nadpis", lang):
-            continue
-        name = re.sub(r"^\s*\d+\s*[—–-]\s*", "", T(f"{sec}_stitek", lang))
-        topics += (f'<li><p class="cat">{e(name)}</p><h3>{e(T(f"{sec}_nadpis", lang))}</h3>'
-                   f'<p class="p0" style="margin-top:10px">{e(T(f"{sec}_text", lang))}</p>{topic_link(sec, lang, short=True)}</li>')
-    topics_html = (f'<section id="temata" class="wrap sec">{sec_head(T("temata_stitek", lang), "", "h2", "topics")}'
-                   f'<ul class="topics">{topics}</ul>'
-                   + (f'<p style="margin:clamp(32px,4vw,48px) 0 0"><a class="link" href="{url(lang, "nabidka/")}#temata">{e(T("nabidka_odkaz", lang))} →</a></p>' if OFFER else "")
-                   + '</section>') if topics else ""
 
     onas_url = CFG.get("onas_url", "")
     imprint_ids = " · ".join(x for x in (f"IČO {CFG.get('ico')}" if CFG.get("ico") else "",
@@ -948,13 +985,11 @@ def home(lang):
 
     body = f"""
 <section class="wrap hero">
-<h1 class="L XL">{br(T("uvod_nadpis", lang))}</h1>
+<h1 class="XL">{br(T("uvod_nadpis", lang))}</h1>
 <p class="M hero-line">{e(T("uvod_text", lang))}</p>
 </section>
 
-{texts_html}
-
-{hero_html}
+{photo_html}
 
 {topics_html}
 
@@ -963,29 +998,33 @@ def home(lang):
 {sec_head(T("postup_stitek", lang))}
 <h2 class="L sh-next">{br(T("postup_nadpis", lang))}</h2>
 <ol class="steps">{steps}</ol>
-<p class="M" style="margin:clamp(48px,6vw,72px) 0 0">{e(T("postup_zaver", lang))}</p>
-{f'<p class="measure" style="margin:16px 0 0">{e(spec)}</p>' if spec else ''}
+<div class="after-steps">
+<p class="M p0">{e(T("postup_zaver", lang))}</p>
+{f'<p>{e(spec)}</p>' if spec else ''}
 {offer_link}
+</div>
 </div>
 </section>
 
 <section id="praxe" class="wrap sec">
-{sec_head(T("praxe_stitek", lang), grid="cards")}
+{sec_head(T("praxe_stitek", lang))}
 <h2 class="L sh-next" style="max-width:16ch">{e(T("praxe_nadpis", lang))}</h2>
 <div class="cards">{cards}</div>
 </section>
 
+{texts_html}
+
 <section id="o-nas" class="sand">
 <div class="wrap sec">
 {sec_head(T("onas_stitek", lang))}
-<blockquote class="L sh-next" style="margin-left:0;margin-right:0;margin-bottom:0;max-width:18ch">{e(T("onas_citat", lang))}</blockquote>
+<blockquote class="L">{hang(T("onas_citat", lang))}</blockquote>
 <div class="about">
 {f'<div class="portrait"><img src="{img_url(portrait)}" alt="{e(T("onas_jmeno", lang))}" loading="lazy"></div>' if portrait else ''}
-<div style="flex:1 1 380px;min-width:0;align-self:flex-end">
-<h3 class="M b p0" style="line-height:1.2">{e(T("onas_jmeno", lang))}</h3>
-<p class="measure" style="margin:14px 0 0">{e(T("onas_text", lang))}</p>
-<p class="measure" style="margin:12px 0 0">{e(T("onas_text_2", lang))}</p>
-{f'<p style="margin:18px 0 0"><a class="link" href="{e(onas_url)}">{e(T("onas_odkaz", lang))}</a></p>' if onas_url else ''}
+<div class="about-text">
+<h3>{e(T("onas_jmeno", lang))}</h3>
+<p>{e(T("onas_text", lang))}</p>
+{f'<p>{e(T("onas_text_2", lang))}</p>' if T("onas_text_2", lang) else ''}
+{f'<p><a class="link" href="{e(onas_url)}">{e(arrow(T("onas_odkaz", lang)))}</a></p>' if onas_url else ''}
 </div>
 </div>
 </div>
@@ -994,19 +1033,19 @@ def home(lang):
 <section id="kontakt" class="wrap sec">
 {sec_head(T("kontakt_stitek", lang))}
 <h2 class="L sh-next" style="max-width:18ch">{e(T("kontakt_nadpis", lang))}</h2>
-<p class="M" style="margin:24px 0 0;max-width:44ch">{e(T("kontakt_text", lang))}</p>
+<p class="M lead">{e(T("kontakt_text", lang))}</p>
 <div class="big-contact">
-{f'<a href="tel:{tel}">{e(phone)}</a>' if phone else ''}
+{f'<a href="tel:{tel}">{phone_html(phone)}</a>' if phone else ''}
 {f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else ''}
 </div>
 {contact_form(lang, mail)}
 <div class="imprint">
 <div style="flex:1 1 320px">
-<p class="b" style="margin:0 0 6px;color:var(--fg)">{e(T("znacka_nadpis", lang))}</p>
-<p class="p0 measure">{e(T("znacka_text", lang))}</p>
+<p class="b" style="color:var(--fg)">{e(T("znacka_nadpis", lang))}</p>
+<p>{e(T("znacka_text", lang))}</p>
 </div>
 <div style="flex:1 1 240px">
-<p class="p0">{e(imprint_ids)}{'<br>' if imprint_ids and addr else ''}{addr}</p>
+<p>{e(imprint_ids)}{'<br>' if imprint_ids and addr else ''}{addr}</p>
 </div>
 </div>
 </section>
@@ -1021,6 +1060,13 @@ def home(lang):
     return page(lang, "", T("seo_titulek", lang), T("seo_popis", lang), body)
 
 
+def hang(s):
+    """Citát s předsazenou otevírací uvozovkou – písmeno lícuje s okrajem textu."""
+    out = e(s)
+    m = re.match(r"^([„“\"»«‚])", out)
+    return f'<span class="hang">{m.group(1)}</span>{out[1:]}' if m else out
+
+
 # ---------------------------------------------------------------- detail projektu
 def project_page(p, lang):
     name = F(p, "nazev", lang)
@@ -1033,7 +1079,7 @@ def project_page(p, lang):
             facts += f'<div><h2>{e(T(key, lang))}</h2>{paras(txt)}</div>'
     gallery = ""
     for f in ph:
-        cap = tr_caption(caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or name_caption(f), lang)
+        cap = tr_caption(caps.get(f.stem, "") or caps.get(f.stem.split("_")[0], "") or file_caption(f), lang)
         gallery += (f'<figure><img src="{img_url(f)}" alt="{e(cap or name)}" loading="lazy">'
                     f'{f"<figcaption>{e(cap)}</figcaption>" if cap else ""}</figure>')
     author = p.get("autor_fotografii", "")
@@ -1041,38 +1087,43 @@ def project_page(p, lang):
     body = f"""
 <article class="wrap detail-head sec">
 <p class="label">{e(project_meta(p, lang))}</p>
-<h1 class="L" style="margin-top:40px;max-width:18ch">{e(name)}</h1>
-<div class="M measure" style="margin-top:28px">{paras(F(p, "anotace", lang))}</div>
-{cooperation(p, lang)}
+<h1 class="L">{e(name)}</h1>
+<div class="M lead">{paras(F(p, "anotace", lang), "p0")}</div>
+<div class="body" style="margin-top:var(--r)">{cooperation(p, lang)}</div>
 {f'<div class="facts">{facts}</div>' if facts else ''}
 {f'<div class="gallery">{gallery}</div>' if gallery else ''}
-{f'<p class="muted" style="margin:16px 0 0">{e(T("foto_autor", lang))}: {e(author)}</p>' if author and author not in ("—", "-") else ''}
-<p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang)}#praxe">← {e(T("projekt_zpet", lang))}</a></p>
+{f'<p class="muted" style="font-size:var(--t-s)">{e(T("foto_autor", lang))}: {e(author)}</p>' if author and author not in ("—", "-") else ''}
+<p class="back"><a class="link" href="{url(lang)}#praxe">← {e(T("projekt_zpet", lang))}</a></p>
 </article>
 """
     return page(lang, f"projekty/{p['slug']}/", f"{name} — KvalitaMísta", desc or name, body)
 
 
 # ---------------------------------------------------------------- články
-def article_meta(a, lang):
+def article_date(a, lang):
     d = a.get("datum", "")
     try:
         y, m, dd = [int(x) for x in d[:10].split("-")]
-        d = f"{dd}. {m}. {y}" if lang in ("cs", "de") else date(y, m, dd).strftime("%-d %B %Y")
+        d = f"{dd}.\u00a0{m}.\u00a0{y}" if lang in ("cs", "de") else date(y, m, dd).strftime("%-d\u00a0%B\u00a0%Y")
     except Exception:
         pass
-    return " · ".join(x for x in (d, a.get("autor", "")) if x)
+    return d
+
+
+def article_meta(a, lang):
+    return " · ".join(x for x in (article_date(a, lang), a.get("autor", "")) if x)
 
 
 def articles_index(lang):
+    # autor se ve výpisu neopakuje (všechny texty píše jeden autor), uvádí se v článku
     lis = "".join(
-        f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="muted p0">{e(article_meta(a, lang))}</p>'
-        f'<h2>{e(F(a, "nazev", lang))}</h2><p class="measure" style="margin:8px 0 0">{e(F(a, "perex", lang))}</p></a></li>'
+        f'<li><a href="{url(lang, "clanky/" + a["slug"] + "/")}"><p class="date">{article_date(a, lang)}</p>'
+        f'<h2>{e(F(a, "nazev", lang))}</h2><p>{e(F(a, "perex", lang))}</p></a></li>'
         for a in arts(lang))
     body = f"""
 <section class="wrap detail-head sec">
 <p class="label">{e(T("clanky_stitek", lang))}</p>
-<h1 class="L" style="margin-top:40px">{e(T("clanky_nadpis", lang))}</h1>
+<h1 class="L">{e(T("clanky_nadpis", lang))}</h1>
 <ul class="list-articles">{lis}</ul>
 </section>
 """
@@ -1151,28 +1202,30 @@ def offer_page(lang):
     phone = CFG.get("telefon", "")
     mail = CFG.get("email", "")
     tel = re.sub(r"[^\d+]", "", phone)
+    lead, rest = split_lead(T("nabidka_uvod", lang))
     acc = ""
     for r in OFFER:
         out = F(r, "vystup", lang)
         acc += (f'<details class="offer"><summary>{e(F(r, "nazev", lang))}</summary>'
-                f'<div><p class="measure p0">{e(F(r, "popis", lang))}</p>'
-                + (f'<p class="measure" style="margin:12px 0 0"><span class="b">{e(T("nabidka_vystup", lang))}:</span> {e(out)}</p>' if out else "")
+                f'<div><p>{e(F(r, "popis", lang))}</p>'
+                + (f'<p><span class="b">{e(T("nabidka_vystup", lang))}:</span> {e(out)}</p>' if out else "")
                 + '</div></details>')
     contact = " · ".join(x for x in (
-        f'<a href="tel:{tel}">{e(phone)}</a>' if phone else "",
+        f'<a href="tel:{tel}">{phone_html(phone)}</a>' if phone else "",
         f'<a href="mailto:{e(mail)}">{e(mail)}</a>' if mail else "") if x)
     body = f"""
 <section class="wrap detail-head sec">
 <p class="label">{e(T("nabidka_stitek", lang))}</p>
-<h1 class="L" style="margin-top:40px;max-width:20ch">{e(T("nabidka_nadpis", lang))}</h1>
-<p class="M measure" style="margin:28px 0 0">{e(T("nabidka_uvod", lang))}</p>
+<h1 class="L">{e(T("nabidka_nadpis", lang))}</h1>
+<p class="M lead">{e(lead)}</p>
+{f'<div class="body">{paras(rest)}</div>' if rest else ''}
 <div class="offers">{acc}</div>
 {topic_details(lang)}
 {coop_block(lang)}
 <h2 class="coop-h">{e(T("nabidka_zacit_nadpis", lang))}</h2>
-<p class="measure" style="margin:12px 0 0">{e(T("nabidka_zacit_text", lang))}</p>
-{f'<p style="margin:12px 0 0">{contact}</p>' if contact else ''}
-<p style="margin:28px 0 0"><a class="btn" href="{url(lang)}#formular">{e(T("tlacitko", lang))}</a></p>
+<div class="body" style="margin-top:calc(var(--r)*.5)"><p>{e(T("nabidka_zacit_text", lang))}</p>
+{f'<p>{contact}</p>' if contact else ''}</div>
+<p class="p0"><a class="btn" href="{url(lang)}#formular">{e(btn_text(T("tlacitko", lang)))}</a></p>
 </section>
 """
     return page(lang, "nabidka/", f"{T('nabidka_stitek', lang)} — KvalitaMísta", T("nabidka_uvod", lang), body)
@@ -1184,8 +1237,8 @@ def author_box(lang):
     if not text:
         return ""
     link = (f' · <a href="{url(lang, "nabidka/")}">{e(T("nabidka_odkaz", lang))}</a>' if OFFER else "")
-    return (f'<aside class="author-box"><p class="b p0">{e(T("clanky_autor", lang))}</p>'
-            f'<p class="measure" style="margin:8px 0 0">{e(text)}{link}</p></aside>')
+    return (f'<aside class="author-box"><p class="label-s">{e(T("clanky_autor", lang))}</p>'
+            f'<p>{e(text)}{link}</p></aside>')
 
 
 def article_page(a, lang):
@@ -1196,12 +1249,12 @@ def article_page(a, lang):
     ART_PH["list"] = ph
     text_html = rich(article_text(a, lang))
     used = ART_PH.get("used", set())
-    lead_cap = (caps.get(ph[0].stem) or name_caption(ph[0])) if ph else ""
-    lead = (f'<figure style="margin:clamp(32px,4vw,56px) 0 0"><img src="{img_url(ph[0])}" alt="{e(lead_cap or name)}">'
-            f'{f"<figcaption class=muted>{e(lead_cap)}</figcaption>" if lead_cap else ""}</figure>'
+    lead_cap = (caps.get(ph[0].stem) or file_caption(ph[0])) if ph else ""
+    lead = (f'<figure class="lead-fig"><img src="{img_url(ph[0])}" alt="{e(lead_cap or name)}">'
+            f'{f"<figcaption>{e(lead_cap)}</figcaption>" if lead_cap else ""}</figure>'
             if ph and ph[0] not in used else "")
-    rest = "".join(f'<figure style="margin:24px 0 0"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
-                   f'{f"<figcaption class=muted>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
+    rest = "".join(f'<figure class="fig"><img src="{img_url(f)}" alt="{e(caps.get(f.stem, name))}" loading="lazy">'
+                   f'{f"<figcaption>{e(caps.get(f.stem))}</figcaption>" if caps.get(f.stem) else ""}</figure>'
                    for f in ph[1:] if f not in used) if not used else ""   # s obrázky v textu bez galerie
     src = a.get("seo_popis_cz", "") or a.get("perex_cz", "")
     if lang == "cs":
@@ -1215,11 +1268,11 @@ def article_page(a, lang):
     rel_html = ""
     if rel:
         rl = "".join(
-            f'<li><a href="{url(lang, "clanky/" + x["slug"] + "/")}"><p class="cat">{e(article_meta(x, lang).split(" · ")[0])}</p>'
+            f'<li><a href="{url(lang, "clanky/" + x["slug"] + "/")}"><p class="cat date">{article_date(x, lang)}</p>'
             f'<h3>{e(F(x, "nazev", lang))}</h3></a></li>' for x in rel)
-        all_link = '<a class="link" href="' + url(lang, "clanky/") + '">' + e(T("texty_vse", lang)) + ' →</a>'
-        rel_html = (f'<section class="related">{sec_head(T("souvisejici", lang), all_link, grid="texts")}'
-                    f'<ul class="texts">{rl}</ul></section>')
+        all_link = '<a class="link" href="' + url(lang, "clanky/") + '">' + e(arrow(T("texty_vse", lang))) + '</a>'
+        rel_html = (f'<section class="related">{sec_head(T("souvisejici", lang), all_link, "h2")}'
+                    f'<ul class="grid3">{rl}</ul></section>')
     lead_abs = (SITE_URL + img_url(ph[0])) if ph else ""
     jsonld = {"@context": "https://schema.org", "@type": "Article", "headline": name,
               "description": desc or F(a, "perex", lang), "inLanguage": lang,
@@ -1235,14 +1288,14 @@ def article_page(a, lang):
     body = f"""
 <article class="wrap detail-head sec">
 <header class="art-head"><p class="b">{e(T("clanky_stitek", lang))}</p>{"".join(f'<p class="muted">{e(x)}</p>' for x in article_meta(a, lang).split(" · ") if x)}</header>
-<h1 class="L" style="margin-top:var(--after);max-width:20ch">{e(name)}</h1>
-<p class="M measure" style="margin:28px 0 0">{e(F(a, "perex", lang))}</p>
+<h1 class="L">{e(name)}</h1>
+<p class="M lead">{e(F(a, "perex", lang))}</p>
 {lead}
-<div class="prose" style="margin-top:clamp(32px,4vw,56px)">{text_html}</div>
+<div class="prose">{text_html}</div>
 {rest}
 {author_box(lang)}
 {rel_html}
-<p style="margin:clamp(40px,5vw,64px) 0 0"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
+<p class="back"><a class="link" href="{url(lang, 'clanky/')}">← {e(T("clanky_zpet", lang))}</a></p>
 </article>
 <script type="application/ld+json">{json.dumps(jsonld, ensure_ascii=False)}</script>
 """
@@ -1264,8 +1317,8 @@ def control_page():
     body = f"""
 <section class="wrap detail-head sec">
 <p class="label">Kontrola strojových překladů</p>
-<h1 class="L" style="margin-top:40px">Přeloženo automaticky</h1>
-<p class="measure" style="margin:24px 0 0">Tyto texty v tabulce nemají ruční překlad a web je přeložil přes DeepL.
+<h1 class="L">Přeloženo automaticky</h1>
+<p class="lead">Tyto texty v tabulce nemají ruční překlad a web je přeložil přes DeepL.
 Pokud chceš překlad opravit, zkopíruj ho do příslušného sloupce EN nebo DE v tabulce a uprav. Ruční text má pak přednost.</p>
 <table class="tr"><thead><tr><th>Jazyk</th><th>Česky</th><th>Překlad</th></tr></thead><tbody>{rows}</tbody></table>
 </section>
@@ -1277,9 +1330,9 @@ Pokud chceš překlad opravit, zkopíruj ho do příslušného sloupce EN nebo D
 def not_found():
     body = f"""
 <section class="wrap hero">
-<h1 class="L">404</h1>
-<div class="hero-sub"><p class="M p0">{e(T("nenalezeno", "cs"))}</p>
-<p style="margin:24px 0 0"><a class="link" href="/">{e(T("nenalezeno_odkaz", "cs"))}</a></p></div>
+<h1 class="XL">404</h1>
+<div class="hero-line"><p class="M p0">{e(T("nenalezeno", "cs"))}</p>
+<p><a class="link" href="/">{e(T("nenalezeno_odkaz", "cs"))}</a></p></div>
 </section>
 """
     return page("cs", "404.html", "404 — KvalitaMísta", "Stránka nenalezena", body, alternates=False, noindex=True)
